@@ -167,5 +167,38 @@ public class TSharkIntegrationService {
             });
     }
 
+    /**
+     * Extract specific field values (e.g., RSRP, RSRQ) for signal quality KPIs
+     */
+    public Flux<String> extractFields(Path pcapFile, List<String> fields) {
+        List<String> args = new ArrayList<>();
+        args.add("-r");
+        args.add(pcapFile.toString());
+        args.add("-d");
+        args.add("udp.port==4729,gsmtap");
+        args.add("-T");
+        args.add("fields");
+        
+        for (String field : fields) {
+            args.add("-e");
+            args.add(field);
+        }
+        
+        args.add("-E");
+        args.add("separator=,");
+        
+        ProcessSpec spec = ProcessSpec.builder()
+            .id("tshark-fields-" + System.currentTimeMillis())
+            .command(config.getTools().getTshark().getPath())
+            .args(args)
+            .workingDirectory(pcapFile.getParent())
+            .environment(Map.of())
+            .build();
+
+        return toolService.start(spec)
+            .flatMapMany(toolService::logs)
+            .filter(line -> !line.isEmpty() && !line.startsWith("Cannot"));
+    }
+
     public record PacketDetail(int frameNumber, double timestamp) {}
 }

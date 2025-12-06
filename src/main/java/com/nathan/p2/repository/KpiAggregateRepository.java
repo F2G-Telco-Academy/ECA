@@ -8,4 +8,7 @@ public interface KpiAggregateRepository extends ReactiveCrudRepository<KpiAggreg
     Flux<KpiAggregate> findBySessionId(Long sessionId);
     
     Flux<KpiAggregate> findBySessionIdAndMetric(Long sessionId, String metric);
+    
+    Flux<KpiAggregate> findBySessionIdAndRat(Long sessionId, String rat);
 }
+
