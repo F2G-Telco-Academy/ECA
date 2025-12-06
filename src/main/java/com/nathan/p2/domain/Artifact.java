@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("artifacts")
+@Table("ARTIFACTS")
 public class Artifact {
     @Id
     private Long id;

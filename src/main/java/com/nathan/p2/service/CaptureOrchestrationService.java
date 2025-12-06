@@ -57,6 +57,7 @@ public class CaptureOrchestrationService {
         );
         
         ProcessSpec spec = ProcessSpec.builder()
+                .id("scat-" + session.getId())
                 .command("python3")
                 .args(args)
                 .workingDirectory(Paths.get(toolsConfig.getTools().getScat().getPath()).getParent())

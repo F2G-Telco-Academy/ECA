@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("anomalies")
+@Table("ANOMALIES")
 public class Anomaly {
     @Id
     private Long id;

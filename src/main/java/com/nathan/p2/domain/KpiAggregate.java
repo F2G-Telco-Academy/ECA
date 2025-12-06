@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("kpi_aggregates")
+@Table("KPI_AGGREGATES")
 public class KpiAggregate {
     @Id
     private Long id;
