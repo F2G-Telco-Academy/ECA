@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-darker text-gray-100;
+}
+
+.terminal {
+  background: #000;
+  padding: 10px;
+  height: 100%;
+}

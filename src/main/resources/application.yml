@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: extended-cellular-analyzer
+  r2dbc:
+    url: r2dbc:sqlite:file:./data/eca.db?mode=rwc
+  security:
+    user:
+      name: admin
+      password: admin123
+
+server:
+  port: 8080
+
+eca:
+  tools:
+    scat:
+      path: ${ECA_SCAT_PATH:./backend/src/scat}
+    termshark:
+      path: ${ECA_TERMSHARK_PATH:./termshark-master}
+    mobileinsight:
+      path: ${ECA_MOBILEINSIGHT_PATH:./mobileinsight-core-master}
+    adb:
+      path: ${ECA_ADB_PATH:adb}
+    tshark:
+      path: ${ECA_TSHARK_PATH:tshark}
+  storage:
+    base-dir: ${ECA_STORAGE_DIR:./data/sessions}
+  device:
+    detection-interval: 3s
+  telemetry:
+    sentry:
+      dsn: ${SENTRY_DSN:}
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.nathan.p2: DEBUG
+    org.springframework.r2dbc: DEBUG
