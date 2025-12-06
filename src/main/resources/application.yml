@@ -14,7 +14,11 @@ server:
 eca:
   tools:
     scat:
-      path: ${ECA_SCAT_PATH:./backend/src/scat}
+      path: ${ECA_SCAT_PATH:./scat/src/scat}
+      type: qc  # Qualcomm parser (qc, sec, hisi, unisoc)
+      layers: ip,mac,rlc,pdcp,rrc,nas
+      port: 4729
+      hostname: 127.0.0.1
     termshark:
       path: ${ECA_TERMSHARK_PATH:./termshark-master}
     mobileinsight:
@@ -27,6 +31,15 @@ eca:
     base-dir: ${ECA_STORAGE_DIR:./data/sessions}
   device:
     detection-interval: 3s
+  kpi:
+    window-size: 5m
+    metrics:
+      - LTE_RRC_SR
+      - LTE_ATTACH_SR
+      - LTE_TAU_SR
+      - LTE_HO_SR
+      - WCDMA_RRC_SR
+      - CALL_SUCCESS_RATE
   telemetry:
     sentry:
       dsn: ${SENTRY_DSN:}
