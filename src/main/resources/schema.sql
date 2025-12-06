@@ -27,7 +27,11 @@ CREATE TABLE IF NOT EXISTS kpi_aggregates (
     min_value DOUBLE,
     avg_value DOUBLE,
     max_value DOUBLE,
-    rat VARCHAR(20)
+    rat VARCHAR(20),
+    latitude DOUBLE,
+    longitude DOUBLE,
+    cell_id VARCHAR(50),
+    pci INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS anomalies (

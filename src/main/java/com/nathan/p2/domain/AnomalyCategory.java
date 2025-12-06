@@ -6,5 +6,11 @@ public enum AnomalyCategory {
     THROUGHPUT,
     CALL_DROP,
     LATENCY,
-    SIGNAL_QUALITY
+    SIGNAL_QUALITY,
+    POOR_COVERAGE,
+    WEAK_SIGNAL,
+    POOR_QUALITY,
+    LOW_SINR,
+    HANDOVER_FAILURE,
+    RRC_FAILURE
 }

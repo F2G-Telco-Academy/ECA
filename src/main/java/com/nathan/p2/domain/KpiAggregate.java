@@ -25,4 +25,8 @@ public class KpiAggregate {
     private Double avgValue;
     private Double maxValue;
     private String rat;
+    private Double latitude;
+    private Double longitude;
+    private String cellId;
+    private Integer pci;
 }
