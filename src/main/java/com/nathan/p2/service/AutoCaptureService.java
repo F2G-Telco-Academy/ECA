@@ -60,7 +60,7 @@ public class AutoCaptureService {
                                                 .next()
                                                 .flatMap(session -> captureService.stopCapture(session.getId()))
                                                 .subscribe(
-                                                        () -> log.info("Auto-capture stopped for device {}", deviceId),
+                                                        v -> log.info("Auto-capture stopped for device {}", deviceId),
                                                         error -> log.error("Failed to stop auto-capture for device {}", deviceId, error)
                                                 );
                                     }

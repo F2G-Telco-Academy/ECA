@@ -37,7 +37,7 @@ public class ExternalToolService {
     }
 
     public Flux<String> logs(ProcessHandle handle) {
-        return Flux.create(sink -> {
+        return Flux.<String>create(sink -> {
             Process p = processes.values().stream()
                 .filter(proc -> proc.toHandle().equals(handle))
                 .findFirst().orElse(null);
