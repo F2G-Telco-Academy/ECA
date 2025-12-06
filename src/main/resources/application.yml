@@ -2,7 +2,7 @@ spring:
   application:
     name: extended-cellular-analyzer
   r2dbc:
-    url: r2dbc:sqlite:file:./data/eca.db?mode=rwc
+    url: r2dbc:sqlite:./data/eca.db
   security:
     user:
       name: admin
