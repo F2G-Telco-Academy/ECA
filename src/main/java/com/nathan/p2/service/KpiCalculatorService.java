@@ -21,7 +21,7 @@ public class KpiCalculatorService {
     private final TSharkIntegrationService tsharkService;
 
     public Mono<Void> calculate(Long sessionId, Path pcapFile) {
-        log.info("📊 Calculating 34 KPIs for ALL RATs (5G/LTE/WCDMA/GSM) - Session {}", sessionId);
+        log.info("📊 Calculating ALL KPIs for ALL RATs (5G/LTE/WCDMA/GSM) - Session {}", sessionId);
         
         return Flux.merge(
             // === 5G NR KPIs ===
@@ -41,19 +41,32 @@ public class KpiCalculatorService {
             calculateLteHoLatency(sessionId, pcapFile),
             calculateLteAbnormalRelease(sessionId, pcapFile),
             calculateLteSignalQuality(sessionId, pcapFile),
+            calculateLtePdnConnectivitySr(sessionId, pcapFile),
+            calculateLteMeasurementReports(sessionId, pcapFile),
+            calculateLteSecurityModeSr(sessionId, pcapFile),
             
             // === WCDMA KPIs ===
             calculateWcdmaRrcSr(sessionId, pcapFile),
             calculateWcdmaHoSr(sessionId, pcapFile),
             calculateWcdmaAbnormalRelease(sessionId, pcapFile),
             calculateWcdmaSignalQuality(sessionId, pcapFile),
+            calculateWcdmaRabSetupSr(sessionId, pcapFile),
+            calculateWcdmaPhysicalChannelReconfig(sessionId, pcapFile),
+            calculateWcdmaActiveSetUpdate(sessionId, pcapFile),
+            calculateWcdmaCellReselection(sessionId, pcapFile),
+            calculateWcdmaPdpContextSr(sessionId, pcapFile),
+            calculateWcdmaSecurityModeSr(sessionId, pcapFile),
+            calculateWcdmaRauSr(sessionId, pcapFile),
             
             // === GSM KPIs ===
             calculateGsmRrSr(sessionId, pcapFile),
             calculateGsmHoSr(sessionId, pcapFile),
             calculateGsmSignalQuality(sessionId, pcapFile),
+            calculateGsmRach(sessionId, pcapFile),
+            calculateGsmLocationUpdate(sessionId, pcapFile),
             
             // === Common KPIs ===
+            calculateCallSetupSr(sessionId, pcapFile),
             calculateCallDropRate(sessionId, pcapFile),
             calculateRrcReestablishmentRate(sessionId, pcapFile),
             calculateThroughput(sessionId, pcapFile),
@@ -62,7 +75,7 @@ public class KpiCalculatorService {
             calculateJitter(sessionId, pcapFile)
         )
         .then()
-        .doOnSuccess(v -> log.info("✅ All 34 KPIs calculated for session {}", sessionId))
+        .doOnSuccess(v -> log.info("✅ All KPIs calculated for session {}", sessionId))
         .doOnError(e -> log.error("❌ KPI calculation failed for session {}", sessionId, e));
     }
 
@@ -380,6 +393,152 @@ public class KpiCalculatorService {
 
     private Mono<KpiAggregate> calculateJitter(Long sessionId, Path pcapFile) {
         return Mono.just(createKpi(sessionId, "JITTER_MS", 5.0, 2.0, 10.0, "ALL"))
+                .flatMap(kpiRepository::save);
+    }
+
+    // ==================== Additional LTE KPIs ====================
+    
+    private Mono<KpiAggregate> calculateLtePdnConnectivitySr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "nas_eps.nas_msg_esm_type == 0xd0")
+                .zipWith(tsharkService.countPackets(pcapFile, "nas_eps.nas_msg_esm_type == 0xd1"))
+                .map(tuple -> {
+                    long requests = tuple.getT1();
+                    long accepts = tuple.getT2();
+                    double sr = requests > 0 ? (accepts * 100.0 / requests) : 0.0;
+                    return createKpi(sessionId, "LTE_PDN_CONNECTIVITY_SR", sr, sr, sr, "LTE");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateLteMeasurementReports(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "lte-rrc.measurementReport_element")
+                .map(count -> createKpi(sessionId, "LTE_MEAS_REPORT_COUNT", count.doubleValue(), count.doubleValue(), count.doubleValue(), "LTE"))
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateLteSecurityModeSr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "lte-rrc.securityModeCommand_element")
+                .zipWith(tsharkService.countPackets(pcapFile, "lte-rrc.securityModeComplete_element"))
+                .map(tuple -> {
+                    long commands = tuple.getT1();
+                    long completes = tuple.getT2();
+                    double sr = commands > 0 ? (completes * 100.0 / commands) : 0.0;
+                    return createKpi(sessionId, "LTE_SECURITY_MODE_SR", sr, sr, sr, "LTE");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    // ==================== Additional WCDMA KPIs ====================
+    
+    private Mono<KpiAggregate> calculateWcdmaRabSetupSr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "rrc.radioBearerSetup")
+                .zipWith(tsharkService.countPackets(pcapFile, "rrc.radioBearerSetupComplete_element"))
+                .map(tuple -> {
+                    long setups = tuple.getT1();
+                    long completes = tuple.getT2();
+                    double sr = setups > 0 ? (completes * 100.0 / setups) : 0.0;
+                    return createKpi(sessionId, "WCDMA_RAB_SETUP_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateWcdmaPhysicalChannelReconfig(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "rrc.physicalChannelReconfiguration")
+                .zipWith(tsharkService.countPackets(pcapFile, "rrc.physicalChannelReconfigurationComplete_element"))
+                .map(tuple -> {
+                    long reconfigs = tuple.getT1();
+                    long completes = tuple.getT2();
+                    double sr = reconfigs > 0 ? (completes * 100.0 / reconfigs) : 0.0;
+                    return createKpi(sessionId, "WCDMA_PHY_CH_RECONFIG_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateWcdmaActiveSetUpdate(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "rrc.activeSetUpdate_element")
+                .zipWith(tsharkService.countPackets(pcapFile, "rrc.activeSetUpdateComplete_element"))
+                .map(tuple -> {
+                    long updates = tuple.getT1();
+                    long completes = tuple.getT2();
+                    double sr = updates > 0 ? (completes * 100.0 / updates) : 0.0;
+                    return createKpi(sessionId, "WCDMA_ACTIVE_SET_UPDATE_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateWcdmaCellReselection(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "rrc.cellUpdate_element")
+                .zipWith(tsharkService.countPackets(pcapFile, "rrc.cellUpdateConfirm_element"))
+                .map(tuple -> {
+                    long updates = tuple.getT1();
+                    long confirms = tuple.getT2();
+                    double sr = updates > 0 ? (confirms * 100.0 / updates) : 0.0;
+                    return createKpi(sessionId, "WCDMA_CELL_RESELECTION_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateWcdmaPdpContextSr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "gsm_a.gm.sm.msg_type == 0x41")
+                .zipWith(tsharkService.countPackets(pcapFile, "gsm_a.gm.sm.msg_type == 0x42"))
+                .map(tuple -> {
+                    long requests = tuple.getT1();
+                    long accepts = tuple.getT2();
+                    double sr = requests > 0 ? (accepts * 100.0 / requests) : 0.0;
+                    return createKpi(sessionId, "WCDMA_PDP_CONTEXT_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateWcdmaSecurityModeSr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "rrc.securityModeCommand_element")
+                .zipWith(tsharkService.countPackets(pcapFile, "rrc.securityModeComplete_element"))
+                .map(tuple -> {
+                    long commands = tuple.getT1();
+                    long completes = tuple.getT2();
+                    double sr = commands > 0 ? (completes * 100.0 / commands) : 0.0;
+                    return createKpi(sessionId, "WCDMA_SECURITY_MODE_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateWcdmaRauSr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "gsm_a.gm.gmm.msg_type == 0x08")
+                .zipWith(tsharkService.countPackets(pcapFile, "gsm_a.gm.gmm.msg_type == 0x09"))
+                .map(tuple -> {
+                    long requests = tuple.getT1();
+                    long accepts = tuple.getT2();
+                    double sr = requests > 0 ? (accepts * 100.0 / requests) : 0.0;
+                    return createKpi(sessionId, "WCDMA_RAU_SR", sr, sr, sr, "WCDMA");
+                })
+                .flatMap(kpiRepository::save);
+    }
+
+    // ==================== Additional GSM KPIs ====================
+    
+    private Mono<KpiAggregate> calculateGsmRach(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "gsm_a.rach")
+                .map(count -> createKpi(sessionId, "GSM_RACH_ATTEMPTS", count.doubleValue(), count.doubleValue(), count.doubleValue(), "GSM"))
+                .flatMap(kpiRepository::save);
+    }
+
+    private Mono<KpiAggregate> calculateGsmLocationUpdate(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "gsm_a.dtap.msg_mm_type == 0x08")
+                .map(count -> createKpi(sessionId, "GSM_LOCATION_UPDATE_COUNT", count.doubleValue(), count.doubleValue(), count.doubleValue(), "GSM"))
+                .flatMap(kpiRepository::save);
+    }
+
+    // ==================== Call Control KPIs ====================
+    
+    private Mono<KpiAggregate> calculateCallSetupSr(Long sessionId, Path pcapFile) {
+        return tsharkService.countPackets(pcapFile, "gsm_a.dtap.msg_cc_type == 0x05")
+                .zipWith(tsharkService.countPackets(pcapFile, "gsm_a.dtap.msg_cc_type == 0x0f"))
+                .map(tuple -> {
+                    long setups = tuple.getT1();
+                    long connects = tuple.getT2();
+                    double sr = setups > 0 ? (connects * 100.0 / setups) : 0.0;
+                    return createKpi(sessionId, "CALL_SETUP_SR", sr, sr, sr, "ALL");
+                })
                 .flatMap(kpiRepository::save);
     }
 
