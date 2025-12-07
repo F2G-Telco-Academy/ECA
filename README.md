@@ -108,6 +108,19 @@ Access the application at `http://localhost:3000`
 
 ## 📊 Backend API
 
+### API Documentation (Swagger UI)
+
+Access the interactive API documentation at:
+- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
+
+The Swagger UI provides:
+- Complete API reference with request/response schemas
+- Interactive testing of all endpoints
+- Example values and parameter descriptions
+- Error response documentation
+- Authentication requirements (when implemented)
+
 ### Device Management
 ```
 GET    /api/devices              - List connected devices
