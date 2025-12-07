@@ -1,82 +1,248 @@
+# Extended Cellular Analyzer - Project Constitution
+
+## Project Identity
+
+**Project Name:** Extended Cellular Analyzer (ECA)  
+**Version:** 0.1.0  
+**Constitution Version:** 1.0.0  
+**Ratification Date:** 2025-12-07  
+**Last Amended:** 2025-12-07
+
+## Mission Statement
+
+To provide a professional, open-source cellular network analyzer that empowers engineers and researchers to capture, analyze, and visualize mobile network performance with XCAL-level capabilities, while maintaining simplicity, modularity, and extensibility.
+
 ---
-description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
-handoffs: 
-  - label: Build Specification
-    agent: speckit.specify
-    prompt: Implement the feature specification based on the updated constitution. I want to build...
+
+## Core Principles
+
+### Principle 1: User-Centric Design
+
+**Statement:** Every feature must prioritize user experience and intuitive operation without requiring extensive training.
+
+**Rules:**
+- UI components must be self-explanatory
+- Workflows must follow industry standards (XCAL, QCAT, QXDM)
+- Error messages must be actionable
+- Documentation must be comprehensive yet concise
+- Onboarding must be seamless (< 5 minutes to first capture)
+
+**Rationale:** Professional tools should empower users, not overwhelm them. Reducing friction increases adoption and productivity.
+
+### Principle 2: Modularity & Extensibility
+
+**Statement:** The system must be designed as loosely-coupled, independently deployable modules that can be extended without modifying core functionality.
+
+**Rules:**
+- Backend follows Controller → Service → Repository pattern
+- Frontend uses component-based architecture
+- APIs must be versioned and backward-compatible
+- New features must not break existing functionality
+- Plugin system for custom KPIs and integrations (Sprint 3)
+
+**Rationale:** Modularity enables parallel development, easier testing, and future extensibility without technical debt.
+
+### Principle 3: Code Quality & Maintainability
+
+**Statement:** All code must adhere to the highest standards to facilitate easy updates, debugging, and collaboration.
+
+**Rules:**
+- **Backend:** JavaDoc for all public methods, Lombok for boilerplate, reactive programming (Mono/Flux)
+- **Frontend:** TypeScript strict mode, React hooks patterns, comprehensive prop types
+- **Testing:** Minimum 85% code coverage, unit + integration tests
+- **Documentation:** Inline comments for complex logic, README for setup
+- **Code Review:** All PRs require review, automated CI/CD checks
+
+**Rationale:** High-quality code reduces bugs, accelerates development, and lowers maintenance costs.
+
+### Principle 4: Performance & Scalability
+
+**Statement:** The system must handle real-world workloads efficiently and scale gracefully.
+
+**Rules:**
+- Response times: Device list < 100ms, KPI data < 50ms, Messages < 200ms
+- Reactive non-blocking I/O throughout backend
+- Pagination for large datasets (100 items per page)
+- Database indexes on all foreign keys
+- Backpressure handling for streaming data
+- Support 10+ concurrent sessions
+
+**Rationale:** Performance directly impacts user satisfaction and system reliability under load.
+
+### Principle 5: Data Integrity & Accuracy
+
+**Statement:** All captured data, calculated KPIs, and generated reports must be accurate and verifiable.
+
+**Rules:**
+- Raw logs must be preserved (PCAP files)
+- KPI calculations must follow 3GPP specifications
+- Timestamps must be synchronized across components
+- Data validation at all input points
+- Audit trail for all modifications
+- Checksums for file integrity
+
+**Rationale:** Inaccurate data leads to wrong conclusions. Trust is paramount in network analysis tools.
+
+### Principle 6: Security & Privacy
+
+**Statement:** User data and system access must be protected against unauthorized access and breaches.
+
+**Rules:**
+- **Current (MVP):** Input validation, error handling, CORS configuration
+- **Sprint 2:** JWT authentication, role-based access control, API keys
+- **Sprint 3:** Data encryption (at-rest and in-transit), audit logging, security audits
+- No hardcoded credentials
+- Sensitive data must be sanitized in logs
+- Regular dependency updates for security patches
+
+**Rationale:** Security breaches damage reputation and user trust. Privacy is a fundamental right.
+
+### Principle 7: Open Collaboration
+
+**Statement:** The project welcomes contributions from the community while maintaining quality standards.
+
+**Rules:**
+- Clear contribution guidelines in README
+- Issue templates for bugs and features
+- Conventional commit messages
+- Code review process for all PRs
+- Respectful and constructive feedback
+- Recognition for contributors
+
+**Rationale:** Open collaboration accelerates innovation and builds a sustainable community.
+
+### Principle 8: Continuous Improvement
+
+**Statement:** The project must evolve based on user feedback, technological advances, and industry standards.
+
+**Rules:**
+- Regular sprint planning and retrospectives
+- User feedback collection and prioritization
+- Technology stack evaluation (quarterly)
+- Performance benchmarking
+- Competitive analysis (XCAL, QCAT, QXDM)
+- Roadmap transparency
+
+**Rationale:** Stagnation leads to obsolescence. Continuous improvement ensures long-term relevance.
+
 ---
 
-## User Input
+## Technical Standards
 
-```text
-$ARGUMENTS
-```
+### Backend Standards
+- **Language:** Java 21
+- **Framework:** Spring Boot 3.x WebFlux
+- **Database:** SQLite with R2DBC
+- **Build Tool:** Maven
+- **Testing:** JUnit 5, Mockito
+- **Documentation:** JavaDoc, Swagger/OpenAPI
 
-You **MUST** consider the user input before proceeding (if not empty).
+### Frontend Standards
+- **Language:** TypeScript 5.x
+- **Framework:** Next.js 14
+- **Desktop:** Tauri 2.x
+- **UI Library:** React 18
+- **Styling:** Tailwind CSS
+- **Testing:** Jest, React Testing Library
 
-## Outline
+### Code Style
+- **Backend:** Google Java Style Guide
+- **Frontend:** Airbnb TypeScript Style Guide
+- **Formatting:** Automated (Prettier, ESLint)
+- **Linting:** Enforced in CI/CD
 
-You are updating the project constitution at `.specify/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
+---
 
-Follow this execution flow:
+## Governance
 
-1. Load the existing constitution template at `.specify/memory/constitution.md`.
-   - Identify every placeholder token of the form `[ALL_CAPS_IDENTIFIER]`.
-   **IMPORTANT**: The user might require less or more principles than the ones used in the template. If a number is specified, respect that - follow the general template. You will update the doc accordingly.
+### Amendment Procedure
+1. Propose amendment via GitHub Issue with label `constitution`
+2. Discussion period: Minimum 7 days
+3. Approval: Requires consensus from core maintainers
+4. Implementation: Update constitution and dependent documents
+5. Version bump: Follow semantic versioning
 
-2. Collect/derive values for placeholders:
-   - If user input (conversation) supplies a value, use it.
-   - Otherwise infer from existing repo context (README, docs, prior constitution versions if embedded).
-   - For governance dates: `RATIFICATION_DATE` is the original adoption date (if unknown ask or mark TODO), `LAST_AMENDED_DATE` is today if changes are made, otherwise keep previous.
-   - `CONSTITUTION_VERSION` must increment according to semantic versioning rules:
-     - MAJOR: Backward incompatible governance/principle removals or redefinitions.
-     - MINOR: New principle/section added or materially expanded guidance.
-     - PATCH: Clarifications, wording, typo fixes, non-semantic refinements.
-   - If version bump type ambiguous, propose reasoning before finalizing.
+### Versioning Policy
+- **MAJOR (X.0.0):** Breaking changes to principles or governance
+- **MINOR (0.X.0):** New principles or significant expansions
+- **PATCH (0.0.X):** Clarifications, typos, non-semantic changes
 
-3. Draft the updated constitution content:
-   - Replace every placeholder with concrete text (no bracketed tokens left except intentionally retained template slots that the project has chosen not to define yet—explicitly justify any left).
-   - Preserve heading hierarchy and comments can be removed once replaced unless they still add clarifying guidance.
-   - Ensure each Principle section: succinct name line, paragraph (or bullet list) capturing non‑negotiable rules, explicit rationale if not obvious.
-   - Ensure Governance section lists amendment procedure, versioning policy, and compliance review expectations.
+### Compliance Review
+- **Frequency:** Quarterly
+- **Scope:** Code quality, test coverage, documentation, security
+- **Action:** Address violations within 30 days
+- **Reporting:** Publish compliance report in GitHub Discussions
 
-4. Consistency propagation checklist (convert prior checklist into active validations):
-   - Read `.specify/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
-   - Read `.specify/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
-   - Read `.specify/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
-   - Read each command file in `.specify/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
-   - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
+### Conflict Resolution
+1. Attempt resolution through discussion
+2. Escalate to core maintainers if unresolved
+3. Final decision by project lead
+4. Document decision and rationale
 
-5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
-   - Version change: old → new
-   - List of modified principles (old title → new title if renamed)
-   - Added sections
-   - Removed sections
-   - Templates requiring updates (✅ updated / ⚠ pending) with file paths
-   - Follow-up TODOs if any placeholders intentionally deferred.
+---
 
-6. Validation before final output:
-   - No remaining unexplained bracket tokens.
-   - Version line matches report.
-   - Dates ISO format YYYY-MM-DD.
-   - Principles are declarative, testable, and free of vague language ("should" → replace with MUST/SHOULD rationale where appropriate).
+## Sprint-Specific Guidelines
 
-7. Write the completed constitution back to `.specify/memory/constitution.md` (overwrite).
+### Sprint 1 - MVP (✅ COMPLETE)
+- Focus: Core functionality, basic UI, essential APIs
+- Quality Gate: 85% test coverage, all features working
+- Documentation: README, API docs, setup guide
 
-8. Output a final summary to the user with:
-   - New version and bump rationale.
-   - Any files flagged for manual follow-up.
-   - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
+### Sprint 2 - Enhanced Features (🔄 PLANNED)
+- Focus: Reports, authentication, multi-device, analytics
+- Quality Gate: 85% test coverage, performance benchmarks
+- Documentation: Updated README, new feature guides
 
-Formatting & Style Requirements:
+### Sprint 3 - Production Deployment (🚀 FUTURE)
+- Focus: Cloud deployment, mobile app, plugin system
+- Quality Gate: 90% test coverage, security audit passed
+- Documentation: Operations manual, deployment guide
 
-- Use Markdown headings exactly as in the template (do not demote/promote levels).
-- Wrap long rationale lines to keep readability (<100 chars ideally) but do not hard enforce with awkward breaks.
-- Keep a single blank line between sections.
-- Avoid trailing whitespace.
+---
 
-If the user supplies partial updates (e.g., only one principle revision), still perform validation and version decision steps.
+## Success Metrics
 
-If critical info missing (e.g., ratification date truly unknown), insert `TODO(<FIELD_NAME>): explanation` and include in the Sync Impact Report under deferred items.
+### Technical Metrics
+- **Code Coverage:** > 85% (Sprint 1-2), > 90% (Sprint 3)
+- **Build Time:** < 5 minutes
+- **Test Execution:** < 2 minutes
+- **API Response Time:** < 200ms (p95)
+- **Bug Density:** < 1 per 1000 LOC
 
-Do not create a new template; always operate on the existing `.specify/memory/constitution.md` file.
+### User Metrics
+- **Onboarding Time:** < 5 minutes
+- **User Satisfaction:** > 4.5/5
+- **Feature Adoption:** > 80% for core features
+- **Support Tickets:** < 10 per month
+
+### Project Metrics
+- **Release Frequency:** Every 3-4 weeks
+- **PR Merge Time:** < 48 hours
+- **Issue Resolution:** < 7 days (bugs), < 30 days (features)
+- **Community Growth:** 10+ contributors by end of year
+
+---
+
+## Acknowledgments
+
+This constitution is inspired by:
+- **XCAL** - Industry-leading cellular analyzer
+- **QCAT/QXDM** - Qualcomm analysis tools
+- **Mobile Insight** - Open-source reference implementation
+- **Spring Boot** - Best practices for reactive applications
+- **Next.js** - Modern web development standards
+
+---
+
+## Ratification
+
+This constitution was ratified on **2025-12-07** by the project lead and core maintainers. All contributors are expected to uphold these principles.
+
+**Signed:**  
+Nathan Boutchouang - Lead Developer
+
+---
+
+**Status:** Active ✅  
+**Next Review:** 2026-03-07 (Quarterly)  
+**Last Updated:** 2025-12-07

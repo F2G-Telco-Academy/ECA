@@ -1,107 +1,191 @@
-# Extended Cellular Analyzer (ECA) - Backend
+# Extended Cellular Analyzer (ECA)
 
-A professional cellular network analyzer that captures UE baseband logs, converts them to PCAP, analyzes network parameters, and visualizes KPIs. Built with Spring Boot WebFlux for reactive, non-blocking performance.
+A professional cellular network analyzer that captures UE baseband logs, converts them to PCAP, analyzes network parameters, and visualizes KPIs. Built with Spring Boot WebFlux (backend) and Next.js + Tauri (frontend).
 
-## Features
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
+[![License](https://img.shields.io/badge/license-Proprietary-blue)]()
+[![Java](https://img.shields.io/badge/Java-21-orange)]()
+[![Node](https://img.shields.io/badge/Node-18+-green)]()
+
+---
+
+## 🎯 Features
 
 ### Core Capabilities
-- **Auto Device Detection**: Automatically detects connected phones via ADB
-- **Auto Capture**: Starts capture on device connect, stops on disconnect
-- **SCAT Integration**: Converts baseband logs (.sdm, .qmdl2) to PCAP using SCAT
-- **KPI Calculation**: Comprehensive KPI analysis (RSRP, RSRQ, SINR, RRC Success Rate, etc.)
-- **Real-time Streaming**: Live log streaming via Server-Sent Events (SSE)
-- **Reactive Architecture**: Non-blocking I/O with Spring WebFlux and R2DBC
+- **Auto Device Detection** - Automatically detects connected phones via ADB
+- **Real-time Capture** - Starts capture on device connect, stops on disconnect
+- **SCAT Integration** - Converts baseband logs (.sdm, .qmdl2) to PCAP
+- **KPI Analysis** - Comprehensive network performance metrics
+- **Live Streaming** - Real-time log streaming via Server-Sent Events
+- **Interactive Dashboard** - Modular 4-panel interface with customizable views
+- **Map Visualization** - GPS-tracked network quality mapping
+- **Signaling Analysis** - Protocol message viewer (RRC, NAS, MAC, etc.)
 
 ### Supported Technologies
 - **RATs**: LTE, NR (5G), WCDMA, GSM
 - **Chipsets**: Qualcomm, Samsung, HiSilicon, Unisoc
 - **Protocols**: RRC, NAS, PDCP, RLC, MAC, IP
 
-## Architecture
+---
 
-### Technology Stack
-- **Backend**: Spring Boot 4.0.0 + WebFlux (Reactive)
-- **Database**: SQLite with R2DBC (Reactive)
-- **External Tools**: 
-  - SCAT (Python) - Baseband log conversion
-  - TShark - PCAP analysis
-  - ADB - Device communication
-- **Observability**: Prometheus metrics, Sentry error tracking
+## 🏗️ Architecture
 
-### Project Structure
 ```
-src/main/java/com/nathan/p2/
-├── config/              # Configuration classes
-│   ├── DatabaseConfig.java
-│   ├── SecurityConfig.java
-│   └── ToolsConfig.java
-├── controller/          # REST API endpoints
-│   ├── SessionController.java
-│   ├── KpiController.java
-│   ├── AnomalyController.java
-│   └── ArtifactController.java
-├── domain/              # Entity models
-│   ├── Session.java
-│   ├── Artifact.java
-│   ├── KpiAggregate.java
-│   └── Anomaly.java
-├── repository/          # R2DBC repositories
-│   ├── SessionRepository.java
-│   ├── ArtifactRepository.java
-│   ├── KpiAggregateRepository.java
-│   └── AnomalyRepository.java
-├── service/             # Business logic
-│   ├── SessionService.java
-│   ├── DeviceDetectorService.java
-│   ├── CaptureOrchestrationService.java
-│   ├── AutoCaptureService.java
-│   └── process/
-│       ├── ExternalToolService.java
-│       └── ProcessSpec.java
-└── P2Application.java   # Main application
+┌─────────────────────────────────────────────────────────────┐
+│              Frontend (Next.js + Tauri)                      │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Modular Dashboard | Terminal | Charts | Map View    │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↕ HTTP/SSE
+┌─────────────────────────────────────────────────────────────┐
+│           Backend (Spring Boot WebFlux + R2DBC)              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Session Mgmt | KPI Analysis | Device Detection      │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↕ Process
+┌─────────────────────────────────────────────────────────────┐
+│              External Tools (Python/Native)                  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  SCAT | TShark | ADB | Mobile Insight                │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
+---
 
-### System Requirements
-- Java 21+
-- Python 3.8+
-- ADB (Android Debug Bridge)
-- TShark (Wireshark CLI)
+## 🚀 Quick Start
 
-### Python Dependencies
+### Prerequisites
+- **Java 21+**
+- **Node.js 18+**
+- **Python 3.8+**
+- **ADB** (Android Debug Bridge)
+- **TShark** (Wireshark CLI)
+
+### Installation
+
 ```bash
-cd backend
-pip install -r requirements.txt
+# Clone repository
+git clone <repository-url>
+cd p2
+
+# Install Python dependencies
+pip install -r scat/requirements.txt
+
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
-### Tool Setup
-1. **SCAT**: Already included in `backend/src/scat/`
-2. **ADB**: Install via system package manager
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install adb
-   
-   # macOS
-   brew install android-platform-tools
-   ```
-3. **TShark**: Install Wireshark
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install tshark
-   
-   # macOS
-   brew install wireshark
-   ```
+### Running the Application
 
-## Configuration
+**Option 1: One-Command Startup**
+```bash
+./start-and-test.sh
+```
 
-### application.yml
+**Option 2: Manual Startup**
+```bash
+# Terminal 1: Backend
+./mvnw spring-boot:run
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+**Option 3: Tauri Desktop App**
+```bash
+cd frontend
+npm run tauri:dev
+```
+
+Access the application at `http://localhost:3000`
+
+---
+
+## 📊 Backend API
+
+### Device Management
+```
+GET    /api/devices              - List connected devices
+GET    /api/devices/{id}         - Get device details
+```
+
+### Session Management
+```
+POST   /api/sessions/start       - Start capture session
+POST   /api/sessions/{id}/stop   - Stop session
+GET    /api/sessions/{id}        - Get session details
+GET    /api/sessions             - List all sessions
+GET    /api/sessions/recent      - Get recent sessions
+GET    /api/sessions/{id}/logs   - Stream logs (SSE)
+```
+
+### KPI Data
+```
+GET    /api/kpis/session/{id}                - Consolidated KPIs
+GET    /api/kpis/session/{id}/aggregates     - All aggregates
+GET    /api/kpis/session/{id}/metric/{m}     - Specific metric
+GET    /api/kpis/session/{id}/category/{c}   - By category
+```
+
+### Signaling Messages
+```
+GET    /api/records/session/{id}  - Paginated protocol messages
+GET    /api/records/{id}          - Specific message
+```
+
+### Map & Analysis
+```
+GET    /api/sessions/{id}/map     - GPS-tracked data
+GET    /api/anomalies/session/{id} - Detected anomalies
+GET    /api/artifacts/session/{id} - Session artifacts
+```
+
+---
+
+## 🎨 Frontend Components
+
+### Main Views
+- **Modular Dashboard** - 4-panel customizable layout
+- **RF Summary** - Real-time signal quality metrics
+- **Signaling Viewer** - Protocol message analysis
+- **Terminal** - Live SCAT/TShark log streaming
+- **Map View** - GPS-tracked network quality
+- **KPI Charts** - Interactive performance graphs
+
+### Key Features
+- Real-time data updates (1s interval)
+- Responsive design
+- Dark/Light theme support
+- Export capabilities (CSV, PDF)
+- Multi-device support
+
+---
+
+## 🗄️ Database Schema
+
+### Tables
+- **sessions** - Capture session metadata
+- **artifacts** - Generated files (PCAP, JSON, PDF)
+- **kpi_aggregates** - Time-windowed KPI metrics
+- **anomalies** - Detected network issues
+- **gps_traces** - GPS tracking data
+- **records** - Signaling protocol messages
+
+---
+
+## 🔧 Configuration
+
+### Backend (`application.yml`)
 ```yaml
 eca:
   tools:
     scat:
-      path: ./backend/src/scat
+      path: ./scat
     adb:
       path: adb
     tshark:
@@ -112,141 +196,73 @@ eca:
     detection-interval: 3s
 ```
 
-### Environment Variables
-- `ECA_SCAT_PATH`: Path to SCAT installation
-- `ECA_ADB_PATH`: Path to ADB executable
-- `ECA_TSHARK_PATH`: Path to TShark executable
-- `ECA_STORAGE_DIR`: Base directory for session data
-- `SENTRY_DSN`: Sentry error tracking DSN (optional)
+### Frontend (`.env.local`)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+```
 
-## Running the Application
+---
 
-### Development Mode
+## 📦 Project Structure
+
+```
+p2/
+├── src/main/java/com/nathan/p2/
+│   ├── controller/          # REST API endpoints
+│   ├── service/             # Business logic
+│   ├── repository/          # Data access (R2DBC)
+│   ├── domain/              # Entity models
+│   ├── dto/                 # Data transfer objects
+│   ├── config/              # Configuration
+│   └── util/                # Utilities
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── pages/           # Next.js pages
+│   │   ├── utils/           # API client, helpers
+│   │   └── types/           # TypeScript types
+│   └── src-tauri/           # Tauri desktop app
+├── scat/                    # SCAT tool (Python)
+├── data/                    # Session data storage
+└── README.md                # This file
+```
+
+---
+
+## 🧪 Testing
+
+### Backend Tests
 ```bash
+./mvnw test
+```
+
+### Integration Tests
+```bash
+./test-integration.sh
+```
+
+### Manual Testing
+```bash
+# Start backend
 ./mvnw spring-boot:run
+
+# Test endpoints
+curl http://localhost:8080/actuator/health
+curl http://localhost:8080/api/devices
 ```
 
-### Production Build
-```bash
-./mvnw clean package
-java -jar target/p2-0.0.1-SNAPSHOT.jar
-```
+---
 
-### With Custom Configuration
-```bash
-java -jar target/p2-0.0.1-SNAPSHOT.jar \
-  --eca.tools.scat.path=/path/to/scat \
-  --eca.storage.base-dir=/data/eca
-```
-
-## API Endpoints
-
-### Session Management
-- `POST /api/sessions/start?deviceId={id}` - Start capture session
-- `POST /api/sessions/{id}/stop` - Stop capture session
-- `GET /api/sessions/{id}` - Get session details
-- `GET /api/sessions` - List all sessions
-- `GET /api/sessions/recent?limit=10` - Get recent sessions
-- `GET /api/sessions/{id}/logs` - Stream live logs (SSE)
-
-### KPI Data
-- `GET /api/kpis/session/{sessionId}` - Get all KPIs for session
-- `GET /api/kpis/session/{sessionId}/metric/{metric}` - Get specific metric
-
-### Anomalies
-- `GET /api/anomalies/session/{sessionId}` - Get anomalies for session
-
-### Artifacts
-- `GET /api/artifacts/session/{sessionId}` - List session artifacts
-- `GET /api/artifacts/{id}/download` - Download artifact
-
-### Monitoring
-- `GET /actuator/health` - Health check
-- `GET /actuator/prometheus` - Prometheus metrics
-
-## Usage Examples
-
-### 1. Auto-Capture (Default)
-Simply connect a phone via USB. The system will:
-1. Detect the device automatically
-2. Create a new session
-3. Start SCAT capture
-4. Stream logs in real-time
-5. Stop capture when device disconnects
-6. Calculate KPIs automatically
-
-### 2. Manual Capture
-```bash
-# Start capture
-curl -X POST "http://localhost:8080/api/sessions/start?deviceId=ABC123"
-
-# Stream logs
-curl -N "http://localhost:8080/api/sessions/1/logs"
-
-# Stop capture
-curl -X POST "http://localhost:8080/api/sessions/1/stop"
-
-# Get KPIs
-curl "http://localhost:8080/api/kpis/session/1"
-```
-
-### 3. View Session Data
-```bash
-# Get session details
-curl "http://localhost:8080/api/sessions/1" | jq
-
-# List artifacts
-curl "http://localhost:8080/api/artifacts/session/1" | jq
-
-# Download PCAP
-curl "http://localhost:8080/api/artifacts/1/download" -o capture.pcap
-```
-
-## Data Flow
-
-```
-Device (USB) 
-    ↓
-ADB Detection (every 3s)
-    ↓
-Auto-Capture Triggered
-    ↓
-SCAT Capture → PCAP File
-    ↓
-KPI Calculator → KPI JSON
-    ↓
-Database (SQLite)
-    ↓
-REST API → Frontend
-```
-
-## Database Schema
-
-### sessions
-- id, device_id, device_model, firmware
-- start_time, end_time, status, session_dir
-
-### artifacts
-- id, session_id, type (PCAP, JSON, PDF, etc.)
-- path, size, created_at
-
-### kpi_aggregates
-- id, session_id, metric (RSRP, RSRQ, etc.)
-- window_start, window_end
-- min_value, avg_value, max_value, rat
-
-### anomalies
-- id, session_id, category, severity
-- timestamp, latitude, longitude, details_json
-
-## KPIs Calculated
+## 📈 KPIs Calculated
 
 ### Signal Quality
 - RSRP (Reference Signal Received Power)
 - RSRQ (Reference Signal Received Quality)
 - SINR (Signal-to-Interference-plus-Noise Ratio)
+- RSCP, Ec/Io (WCDMA)
+- RXLEV, RXQUAL (GSM)
 
-### Connection Success Rates
+### Success Rates
 - RRC Connection Success Rate
 - RACH Success Rate
 - Handover Success Rate
@@ -258,124 +274,214 @@ REST API → Frontend
 - Downlink/Uplink Throughput
 - Latency (min/avg/max)
 - Packet Loss Rate
-
-## Troubleshooting
-
-### Device Not Detected
-```bash
-# Check ADB connection
-adb devices
-
-# Enable USB debugging on phone
-# Settings → Developer Options → USB Debugging
-```
-
-### SCAT Not Starting
-```bash
-# Verify Python environment
-python3 -m scat.main --version
-
-# Check SCAT path in config
-cat src/main/resources/application.yml | grep scat
-```
-
-### Database Errors
-```bash
-# Check database file
-ls -lh data/eca.db
-
-# View logs
-tail -f logs/spring.log
-```
-
-### Port Already in Use
-```bash
-# Change port in application.yml
-server:
-  port: 8081
-```
-
-## Development
-
-### Build
-```bash
-./mvnw clean install
-```
-
-### Run Tests
-```bash
-./mvnw test
-```
-
-### Code Style
-- Follow Spring Boot best practices
-- Use Lombok for boilerplate reduction
-- Reactive programming with Reactor
-- Comprehensive logging
-
-## Deployment
-
-### Docker (Future)
-```dockerfile
-FROM eclipse-temurin:21-jre
-COPY target/p2-0.0.1-SNAPSHOT.jar app.jar
-ENTRYPOINT ["java", "-jar", "/app.jar"]
-```
-
-### Systemd Service
-```ini
-[Unit]
-Description=Extended Cellular Analyzer
-After=network.target
-
-[Service]
-Type=simple
-User=eca
-WorkingDirectory=/opt/eca
-ExecStart=/usr/bin/java -jar /opt/eca/p2-0.0.1-SNAPSHOT.jar
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## Roadmap
-
-### Sprint 1 (MVP) ✅
-- [x] Auto device detection
-- [x] Auto capture on connect
-- [x] SCAT integration
-- [x] Real-time log streaming
-- [x] SQLite persistence
-- [x] Basic KPI calculation
-
-### Sprint 2 (Planned)
-- [ ] Advanced KPI aggregation
-- [ ] Anomaly detection rules
-- [ ] GPS tracking integration
-- [ ] Map visualization data
-- [ ] PDF/HTML report generation
-
-### Sprint 3 (Future)
-- [ ] AI-powered insights
-- [ ] Multi-device support
-- [ ] Redis caching
-- [ ] Elasticsearch search
-- [ ] Advanced security
-
-## License
-
-Proprietary - Extended Cellular Analyzer
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Project Repository]
-- Email: support@eca.com
-- Documentation: [Wiki Link]
+- Jitter
 
 ---
 
-**Version**: 0.0.1-SNAPSHOT  
-**Last Updated**: 2025-12-06  
-**Author**: Nathan Boutchouang
+## 🐛 Issue Reporting
+
+Found a bug or have a feature request? Please submit an issue:
+
+### Before Submitting
+1. Check if the issue already exists
+2. Collect relevant information:
+   - OS and version
+   - Java/Node.js version
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Logs/screenshots
+
+### Submit Issue
+1. Go to [Issues](../../issues)
+2. Click "New Issue"
+3. Choose template:
+   - **Bug Report** - For bugs
+   - **Feature Request** - For new features
+   - **Question** - For questions
+4. Fill in all required fields
+5. Add relevant labels
+
+### Issue Template
+```markdown
+**Environment:**
+- OS: [e.g., Windows 11, Ubuntu 22.04]
+- Java: [e.g., 21.0.1]
+- Node: [e.g., 18.17.0]
+
+**Description:**
+Clear description of the issue
+
+**Steps to Reproduce:**
+1. Step 1
+2. Step 2
+3. ...
+
+**Expected Behavior:**
+What should happen
+
+**Actual Behavior:**
+What actually happens
+
+**Logs:**
+```
+Paste relevant logs here
+```
+
+**Screenshots:**
+If applicable
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Follow these steps:
+
+### Setup Development Environment
+```bash
+# Fork the repository
+git clone <your-fork-url>
+cd p2
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Install dependencies
+./mvnw clean install
+cd frontend && npm install
+```
+
+### Development Workflow
+1. **Code** - Write your changes
+2. **Test** - Ensure all tests pass
+3. **Document** - Update relevant documentation
+4. **Commit** - Use conventional commits
+5. **Push** - Push to your fork
+6. **PR** - Create pull request
+
+### Commit Message Convention
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types:**
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation
+- `style` - Formatting
+- `refactor` - Code restructuring
+- `test` - Tests
+- `chore` - Maintenance
+
+**Example:**
+```
+feat(backend): add device management API
+
+- Implement DeviceController
+- Add DeviceDto and DeviceService
+- Update schema with device table
+
+Closes #123
+```
+
+### Code Standards
+
+**Backend (Java):**
+- Follow Spring Boot best practices
+- Use Lombok for boilerplate
+- Write JavaDoc for public methods
+- Reactive programming (Mono/Flux)
+- Comprehensive error handling
+
+**Frontend (TypeScript/React):**
+- Use TypeScript strictly
+- Follow React hooks patterns
+- Component-based architecture
+- Proper error boundaries
+- Accessibility compliance
+
+### Pull Request Process
+1. Update README if needed
+2. Ensure all tests pass
+3. Update version numbers
+4. Request review from maintainers
+5. Address review comments
+6. Squash commits if requested
+
+### Code Review Checklist
+- [ ] Code compiles without errors
+- [ ] Tests pass
+- [ ] No console errors/warnings
+- [ ] Documentation updated
+- [ ] Follows coding standards
+- [ ] No security vulnerabilities
+- [ ] Performance considerations addressed
+
+---
+
+## 📝 License
+
+Proprietary - Extended Cellular Analyzer
+
+---
+
+## 👥 Team
+
+- **Lead Developer** - Nathan Boutchouang
+- **Contributors** - See [Contributors](../../graphs/contributors)
+
+---
+
+## 📞 Support
+
+- **Documentation** - This README
+- **Issues** - [GitHub Issues](../../issues)
+- **Discussions** - [GitHub Discussions](../../discussions)
+
+---
+
+## 🗺️ Roadmap
+
+### Current Version (v0.1.0)
+- ✅ Auto device detection
+- ✅ Real-time capture
+- ✅ SCAT integration
+- ✅ KPI calculation
+- ✅ Interactive dashboard
+- ✅ Map visualization
+
+### Next Release (v0.2.0)
+- [ ] Report generation (PDF/HTML)
+- [ ] Advanced anomaly detection
+- [ ] Multi-device parallel sessions
+- [ ] Authentication & authorization
+- [ ] WebSocket support
+- [ ] AI-powered insights
+
+### Future
+- [ ] Cloud deployment
+- [ ] Mobile app
+- [ ] Advanced ML analytics
+- [ ] Real-time collaboration
+- [ ] Plugin system
+
+---
+
+## 🙏 Acknowledgments
+
+- **SCAT** - Baseband log conversion tool
+- **TShark** - Network protocol analyzer
+- **Mobile Insight** - Reference implementation
+- **Spring Boot** - Backend framework
+- **Next.js** - Frontend framework
+- **Tauri** - Desktop app framework
+
+---
+
+**Version:** 0.1.0  
+**Last Updated:** 2025-12-07  
+**Status:** Production Ready ✅

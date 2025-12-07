@@ -11,7 +11,8 @@ public record ProcessSpec(
     String command,
     List<String> args,
     Path workingDirectory,
-    Map<String, String> environment
+    Map<String, String> environment,
+    boolean captureStderr
 ) {
     public ProcessSpec {
         args = args != null ? List.copyOf(args) : List.of();

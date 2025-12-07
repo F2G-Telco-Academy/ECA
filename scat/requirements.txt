@@ -2,3 +2,4 @@
 signalcat[fastcrc]>=1.0.0
 pyusb>=1.2.1
 construct>=2.10.68
+folium>=0.15.1

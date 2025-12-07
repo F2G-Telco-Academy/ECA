@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ExternalToolService {
     private final Map<String, Process> processes = new ConcurrentHashMap<>();
+    private final Map<ProcessHandle, List<String>> stderrCache = new ConcurrentHashMap<>();
 
     public Mono<ProcessHandle> start(ProcessSpec spec) {
         return Mono.fromCallable(() -> {
@@ -31,6 +32,26 @@ public class ExternalToolService {
             
             Process p = pb.start();
             processes.put(spec.id(), p);
+            
+            // Capture stderr if requested
+            if (spec.captureStderr()) {
+                List<String> stderrLines = new ArrayList<>();
+                stderrCache.put(p.toHandle(), stderrLines);
+                
+                // Start stderr capture thread
+                new Thread(() -> {
+                    try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
+                        String line;
+                        while ((line = r.readLine()) != null) {
+                            stderrLines.add(line);
+                            log.debug("[{}] stderr: {}", spec.id(), line);
+                        }
+                    } catch (Exception e) {
+                        log.error("Error capturing stderr: {}", e.getMessage());
+                    }
+                }).start();
+            }
+            
             log.info("Started: {} (PID: {})", spec.id(), p.pid());
             return p.toHandle();
         }).subscribeOn(Schedulers.boundedElastic());
@@ -59,6 +80,16 @@ public class ExternalToolService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    public Flux<String> stderr(ProcessHandle handle) {
+        return Flux.defer(() -> {
+            List<String> lines = stderrCache.get(handle);
+            if (lines == null) {
+                return Flux.empty();
+            }
+            return Flux.fromIterable(new ArrayList<>(lines));
+        });
+    }
+
     public Mono<Integer> stop(ProcessHandle handle) {
         return Mono.fromCallable(() -> {
             Process p = processes.values().stream()
@@ -74,6 +105,7 @@ public class ExternalToolService {
             
             int code = p.exitValue();
             processes.values().remove(p);
+            stderrCache.remove(handle);
             log.info("Stopped with code: {}", code);
             return code;
         }).subscribeOn(Schedulers.boundedElastic());

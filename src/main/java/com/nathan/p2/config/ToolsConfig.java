@@ -26,6 +26,7 @@ public class ToolsConfig {
     @Data
     public static class Tool {
         private String path;
+        private String pythonPath = "python3";
     }
     
     @Data

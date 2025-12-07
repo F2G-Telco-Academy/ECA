@@ -1,137 +1,390 @@
+# Extended Cellular Analyzer - Task Breakdown
+
+## Sprint 1 - MVP (✅ COMPLETE)
+
+### Backend Tasks
+
+#### Device Management (✅ COMPLETE)
+- [x] Create DeviceController
+- [x] Create DeviceDto
+- [x] Implement DeviceDetectorService
+- [x] ADB integration for device detection
+- [x] Device property extraction (model, manufacturer, firmware)
+- [x] Chipset detection logic
+
+#### Session Management (✅ COMPLETE)
+- [x] Create SessionController
+- [x] Create Session entity
+- [x] Create SessionRepository
+- [x] Implement SessionService
+- [x] Start/stop session endpoints
+- [x] Session listing and filtering
+- [x] Session status tracking
+
+#### SCAT Integration (✅ COMPLETE)
+- [x] Create CaptureOrchestrationService
+- [x] SCAT process management
+- [x] Log streaming via SSE
+- [x] PCAP file generation
+- [x] Error handling and recovery
+
+#### KPI Calculation (✅ COMPLETE)
+- [x] Create KpiController
+- [x] Create KpiService
+- [x] Create KpiAggregate entity
+- [x] Create KpiAggregateRepository
+- [x] Implement KPI calculation logic
+- [x] Signal quality metrics (RSRP, RSRQ, SINR)
+- [x] Success rate metrics (RRC, RACH, HO, E-RAB)
+- [x] Performance metrics (throughput, latency)
+- [x] Time-windowed aggregation
+- [x] Consolidated KPI endpoint
+
+#### Signaling Messages (✅ COMPLETE)
+- [x] Create RecordController
+- [x] Create RecordService
+- [x] Create Record entity
+- [x] Create RecordRepository
+- [x] Paginated message retrieval
+- [x] Protocol filtering
+- [x] Direction filtering
+- [x] Hex dump storage
+- [x] Decoded message storage
+
+#### Map & GPS (✅ COMPLETE)
+- [x] Create MapDataController
+- [x] Create GpsTrace entity
+- [x] GPS tracking integration
+- [x] Map data API
+- [x] Route visualization support
+
+#### Anomaly Detection (✅ COMPLETE)
+- [x] Create AnomalyController
+- [x] Create Anomaly entity
+- [x] Basic anomaly detection rules
+- [x] Anomaly storage and retrieval
+
+#### Database (✅ COMPLETE)
+- [x] Design schema
+- [x] Create migration scripts
+- [x] Setup R2DBC
+- [x] Configure SQLite
+- [x] Add indexes for performance
+
+### Frontend Tasks
+
+#### Core UI (✅ COMPLETE)
+- [x] Setup Next.js project
+- [x] Configure Tailwind CSS
+- [x] Setup Tauri
+- [x] Create main layout
+- [x] Implement routing
+
+#### Dashboard (✅ COMPLETE)
+- [x] Create ModularDashboard component
+- [x] 4-panel grid layout
+- [x] Panel content selector
+- [x] Layout switcher
+- [x] Real-time data updates
+
+#### RF Summary (✅ COMPLETE)
+- [x] Create XCALRFSummary component
+- [x] UE state display
+- [x] Throughput metrics
+- [x] LTE cell information (PCell + 7 SCells)
+- [x] NR cell information (PCell + 7 SCells)
+- [x] Signal quality display
+- [x] Color-coded indicators
+
+#### Signaling Viewer (✅ COMPLETE)
+- [x] Create XCALSignalingViewer component
+- [x] Protocol filter dropdown
+- [x] Direction filter
+- [x] Paginated message table
+- [x] Message detail view
+- [x] Hex dump display
+- [x] Decoded message display
+
+#### Terminal (✅ COMPLETE)
+- [x] Create EnhancedTerminal component
+- [x] Integrate xterm.js
+- [x] SSE connection for logs
+- [x] Color-coded log levels
+- [x] Auto-scroll toggle
+- [x] Clear function
+- [x] Export function
+
+#### Charts (✅ COMPLETE)
+- [x] Create KPI chart components
+- [x] Line chart implementation
+- [x] Area chart implementation
+- [x] Bar chart implementation
+- [x] Metric selector
+- [x] Time-series data handling
+- [x] Statistics display
+
+#### Map View (✅ COMPLETE)
+- [x] Create MapView component
+- [x] Integrate MapLibre GL
+- [x] GPS route display
+- [x] Signal strength overlay
+- [x] Anomaly markers
+- [x] Route playback controls
+
+#### Session Control (✅ COMPLETE)
+- [x] Create SessionControlPanel
+- [x] Start/stop buttons
+- [x] Session status display
+- [x] Device selector
+- [x] Session info display
+
+#### Multi-Device (✅ COMPLETE)
+- [x] Create MultiDeviceGrid component
+- [x] Device card layout
+- [x] Device status indicators
+- [x] Device selection
+- [x] Real-time updates
+
+#### API Integration (✅ COMPLETE)
+- [x] Create API client utility
+- [x] Implement all API calls
+- [x] Error handling
+- [x] TypeScript types
+- [x] SSE support
+
+### Testing Tasks (✅ COMPLETE)
+- [x] Backend unit tests
+- [x] Backend integration tests
+- [x] API endpoint tests
+- [x] Frontend component tests
+- [x] E2E test scripts
+
+### Documentation (✅ COMPLETE)
+- [x] README.md
+- [x] API documentation
+- [x] Setup instructions
+- [x] Contributing guidelines
+- [x] Issue templates
+
 ---
-description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
-handoffs: 
-  - label: Analyze For Consistency
-    agent: speckit.analyze
-    prompt: Run a project analysis for consistency
-    send: true
-  - label: Implement Project
-    agent: speckit.implement
-    prompt: Start the implementation in phases
-    send: true
+
+## Sprint 2 - Enhanced Features (🔄 PLANNED)
+
+### Report Generation (⏳ TODO)
+- [ ] Create ReportController
+- [ ] Create ReportService
+- [ ] PDF generation with charts
+  - [ ] Integrate Apache PDFBox
+  - [ ] Chart rendering to images
+  - [ ] Template system
+  - [ ] Multi-page support
+- [ ] HTML report generation
+  - [ ] Template engine (Thymeleaf)
+  - [ ] Interactive charts
+  - [ ] Responsive design
+- [ ] CSV export
+  - [ ] KPI data export
+  - [ ] Signaling messages export
+  - [ ] GPS traces export
+- [ ] Report scheduling
+  - [ ] Cron job support
+  - [ ] Email delivery
+  - [ ] Storage management
+- [ ] Custom templates
+  - [ ] Template editor
+  - [ ] Template library
+  - [ ] Template sharing
+
+### Advanced Analytics (⏳ TODO)
+- [ ] AI-powered anomaly detection
+  - [ ] Machine learning model
+  - [ ] Training data collection
+  - [ ] Model deployment
+  - [ ] Real-time inference
+- [ ] Predictive KPI trends
+  - [ ] Time-series forecasting
+  - [ ] Trend analysis
+  - [ ] Alert thresholds
+- [ ] Comparative analysis
+  - [ ] Session comparison
+  - [ ] Device comparison
+  - [ ] Time period comparison
+  - [ ] Statistical tests
+- [ ] Statistical analysis tools
+  - [ ] Histogram generation
+  - [ ] Distribution analysis
+  - [ ] Correlation analysis
+  - [ ] Outlier detection
+
+### Multi-Device Support (⏳ TODO)
+- [ ] Parallel session management
+  - [ ] Multi-session controller
+  - [ ] Resource allocation
+  - [ ] Session synchronization
+- [ ] Device comparison views
+  - [ ] Side-by-side comparison
+  - [ ] Differential analysis
+  - [ ] Performance ranking
+- [ ] Synchronized captures
+  - [ ] Time synchronization
+  - [ ] Coordinated start/stop
+  - [ ] Unified timeline
+- [ ] Multi-device aggregation
+  - [ ] Combined KPIs
+  - [ ] Fleet-wide metrics
+  - [ ] Aggregate reports
+
+### Authentication & Security (⏳ TODO)
+- [ ] User authentication
+  - [ ] JWT implementation
+  - [ ] Login/logout endpoints
+  - [ ] Token refresh
+  - [ ] Password hashing
+- [ ] Role-based access control
+  - [ ] User roles (Admin, Analyst, Viewer)
+  - [ ] Permission system
+  - [ ] Resource-level access
+- [ ] API key management
+  - [ ] Key generation
+  - [ ] Key rotation
+  - [ ] Usage tracking
+- [ ] Audit logging
+  - [ ] Action logging
+  - [ ] User activity tracking
+  - [ ] Compliance reports
+- [ ] Data encryption
+  - [ ] At-rest encryption
+  - [ ] In-transit encryption (HTTPS)
+  - [ ] Key management
+
+### Real-time Enhancements (⏳ TODO)
+- [ ] WebSocket support
+  - [ ] WebSocket controller
+  - [ ] Bidirectional communication
+  - [ ] Connection management
+- [ ] Live KPI calculation
+  - [ ] Streaming aggregation
+  - [ ] Real-time updates
+  - [ ] Incremental calculation
+- [ ] Push notifications
+  - [ ] Notification service
+  - [ ] Alert rules
+  - [ ] Multi-channel delivery
+- [ ] Real-time alerts
+  - [ ] Threshold monitoring
+  - [ ] Alert escalation
+  - [ ] Alert history
+
 ---
 
-## User Input
+## Sprint 3 - Production Deployment (🚀 FUTURE)
 
-```text
-$ARGUMENTS
-```
+### Cloud Deployment (⏳ TODO)
+- [ ] Docker containerization
+  - [ ] Backend Dockerfile
+  - [ ] Frontend Dockerfile
+  - [ ] Docker Compose
+  - [ ] Multi-stage builds
+- [ ] Kubernetes orchestration
+  - [ ] Deployment manifests
+  - [ ] Service definitions
+  - [ ] ConfigMaps and Secrets
+  - [ ] Ingress configuration
+- [ ] AWS/Azure deployment
+  - [ ] Infrastructure as Code (Terraform)
+  - [ ] Load balancer setup
+  - [ ] Database migration
+  - [ ] Monitoring setup
+- [ ] CI/CD pipeline
+  - [ ] GitHub Actions
+  - [ ] Automated testing
+  - [ ] Automated deployment
+  - [ ] Rollback strategy
+- [ ] Auto-scaling
+  - [ ] Horizontal pod autoscaling
+  - [ ] Metrics-based scaling
+  - [ ] Load testing
 
-You **MUST** consider the user input before proceeding (if not empty).
+### Performance Optimization (⏳ TODO)
+- [ ] Database optimization
+  - [ ] Query optimization
+  - [ ] Index tuning
+  - [ ] Connection pooling
+- [ ] Caching layer
+  - [ ] Redis integration
+  - [ ] Cache strategies
+  - [ ] Cache invalidation
+- [ ] CDN integration
+  - [ ] Static asset delivery
+  - [ ] Edge caching
+  - [ ] Geographic distribution
+- [ ] Load testing
+  - [ ] JMeter tests
+  - [ ] Stress testing
+  - [ ] Performance benchmarks
+- [ ] Monitoring
+  - [ ] Prometheus integration
+  - [ ] Grafana dashboards
+  - [ ] Alert rules
 
-## Outline
+### Mobile App (⏳ TODO)
+- [ ] React Native setup
+- [ ] iOS app development
+- [ ] Android app development
+- [ ] Offline mode
+- [ ] Push notifications
+- [ ] Mobile-optimized UI
 
-1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+### Plugin System (⏳ TODO)
+- [ ] Plugin architecture
+- [ ] Plugin API
+- [ ] Custom KPI plugins
+- [ ] Third-party integrations
+- [ ] Plugin marketplace
+- [ ] SDK for developers
 
-2. **Load design documents**: Read from FEATURE_DIR:
-   - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
-   - **Optional**: data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
-   - Note: Not all projects have all documents. Generate tasks based on what's available.
+---
 
-3. **Execute task generation workflow**:
-   - Load plan.md and extract tech stack, libraries, project structure
-   - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
-   - If data-model.md exists: Extract entities and map to user stories
-   - If contracts/ exists: Map endpoints to user stories
-   - If research.md exists: Extract decisions for setup tasks
-   - Generate tasks organized by user story (see Task Generation Rules below)
-   - Generate dependency graph showing user story completion order
-   - Create parallel execution examples per user story
-   - Validate task completeness (each user story has all needed tasks, independently testable)
+## Task Priority Matrix
 
-4. **Generate tasks.md**: Use `.specify/templates/tasks-template.md` as structure, fill with:
-   - Correct feature name from plan.md
-   - Phase 1: Setup tasks (project initialization)
-   - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
-   - Phase 3+: One phase per user story (in priority order from spec.md)
-   - Each phase includes: story goal, independent test criteria, tests (if requested), implementation tasks
-   - Final Phase: Polish & cross-cutting concerns
-   - All tasks must follow the strict checklist format (see Task Generation Rules below)
-   - Clear file paths for each task
-   - Dependencies section showing story completion order
-   - Parallel execution examples per story
-   - Implementation strategy section (MVP first, incremental delivery)
+### High Priority (Sprint 2)
+1. Report generation (PDF/HTML)
+2. Authentication & authorization
+3. Multi-device support
+4. Advanced analytics
 
-5. **Report**: Output path to generated tasks.md and summary:
-   - Total task count
-   - Task count per user story
-   - Parallel opportunities identified
-   - Independent test criteria for each story
-   - Suggested MVP scope (typically just User Story 1)
-   - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+### Medium Priority (Sprint 2/3)
+1. WebSocket support
+2. Real-time enhancements
+3. Performance optimization
+4. Cloud deployment
 
-Context for task generation: $ARGUMENTS
+### Low Priority (Sprint 3+)
+1. Mobile app
+2. Plugin system
+3. Advanced ML features
+4. Marketplace
 
-The tasks.md should be immediately executable - each task must be specific enough that an LLM can complete it without additional context.
+---
 
-## Task Generation Rules
+## Estimated Effort
 
-**CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
+### Sprint 2 (3 weeks)
+- Report Generation: 5 days
+- Authentication: 4 days
+- Multi-Device: 4 days
+- Advanced Analytics: 6 days
+- Testing & Documentation: 2 days
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+### Sprint 3 (4 weeks)
+- Cloud Deployment: 7 days
+- Performance Optimization: 5 days
+- Mobile App: 10 days
+- Plugin System: 6 days
+- Testing & Documentation: 2 days
 
-### Checklist Format (REQUIRED)
+---
 
-Every task MUST strictly follow this format:
-
-```text
-- [ ] [TaskID] [P?] [Story?] Description with file path
-```
-
-**Format Components**:
-
-1. **Checkbox**: ALWAYS start with `- [ ]` (markdown checkbox)
-2. **Task ID**: Sequential number (T001, T002, T003...) in execution order
-3. **[P] marker**: Include ONLY if task is parallelizable (different files, no dependencies on incomplete tasks)
-4. **[Story] label**: REQUIRED for user story phase tasks only
-   - Format: [US1], [US2], [US3], etc. (maps to user stories from spec.md)
-   - Setup phase: NO story label
-   - Foundational phase: NO story label  
-   - User Story phases: MUST have story label
-   - Polish phase: NO story label
-5. **Description**: Clear action with exact file path
-
-**Examples**:
-
-- ✅ CORRECT: `- [ ] T001 Create project structure per implementation plan`
-- ✅ CORRECT: `- [ ] T005 [P] Implement authentication middleware in src/middleware/auth.py`
-- ✅ CORRECT: `- [ ] T012 [P] [US1] Create User model in src/models/user.py`
-- ✅ CORRECT: `- [ ] T014 [US1] Implement UserService in src/services/user_service.py`
-- ❌ WRONG: `- [ ] Create User model` (missing ID and Story label)
-- ❌ WRONG: `T001 [US1] Create model` (missing checkbox)
-- ❌ WRONG: `- [ ] [US1] Create User model` (missing Task ID)
-- ❌ WRONG: `- [ ] T001 [US1] Create model` (missing file path)
-
-### Task Organization
-
-1. **From User Stories (spec.md)** - PRIMARY ORGANIZATION:
-   - Each user story (P1, P2, P3...) gets its own phase
-   - Map all related components to their story:
-     - Models needed for that story
-     - Services needed for that story
-     - Endpoints/UI needed for that story
-     - If tests requested: Tests specific to that story
-   - Mark story dependencies (most stories should be independent)
-
-2. **From Contracts**:
-   - Map each contract/endpoint → to the user story it serves
-   - If tests requested: Each contract → contract test task [P] before implementation in that story's phase
-
-3. **From Data Model**:
-   - Map each entity to the user story(ies) that need it
-   - If entity serves multiple stories: Put in earliest story or Setup phase
-   - Relationships → service layer tasks in appropriate story phase
-
-4. **From Setup/Infrastructure**:
-   - Shared infrastructure → Setup phase (Phase 1)
-   - Foundational/blocking tasks → Foundational phase (Phase 2)
-   - Story-specific setup → within that story's phase
-
-### Phase Structure
-
-- **Phase 1**: Setup (project initialization)
-- **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
-- **Phase 3+**: User Stories in priority order (P1, P2, P3...)
-  - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
-  - Each phase should be a complete, independently testable increment
-- **Final Phase**: Polish & Cross-Cutting Concerns
+**Status:** Sprint 1 Complete ✅  
+**Next:** Sprint 2 - Enhanced Features  
+**Last Updated:** 2025-12-07

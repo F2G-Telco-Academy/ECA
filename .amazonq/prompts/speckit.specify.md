@@ -1,258 +1,510 @@
----
-description: Create or update the feature specification from a natural language feature description.
-handoffs: 
-  - label: Build Technical Plan
-    agent: speckit.plan
-    prompt: Create a plan for the spec. I am building with...
-  - label: Clarify Spec Requirements
-    agent: speckit.clarify
-    prompt: Clarify specification requirements
-    send: true
----
+# Extended Cellular Analyzer - Technical Specifications
 
-## User Input
+## System Architecture
 
-```text
-$ARGUMENTS
+### High-Level Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│              Frontend (Next.js + Tauri)                      │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Modular Dashboard | Terminal | Charts | Map View    │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↕ HTTP/SSE
+┌─────────────────────────────────────────────────────────────┐
+│           Backend (Spring Boot WebFlux + R2DBC)              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Session Mgmt | KPI Analysis | Device Detection      │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↕ Process
+┌─────────────────────────────────────────────────────────────┐
+│              External Tools (Python/Native)                  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  SCAT | TShark | ADB | Mobile Insight                │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+## Backend Specifications
 
-## Outline
+### Technology Stack
+- **Framework:** Spring Boot 3.2.0 WebFlux
+- **Language:** Java 21
+- **Database:** SQLite with R2DBC
+- **Build Tool:** Maven 3.9+
+- **Reactive:** Project Reactor
 
-The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
+### API Endpoints (19 Total)
 
-Given that feature description, do this:
+#### Device Management
+```
+GET    /api/devices              - List connected devices
+GET    /api/devices/{id}         - Get device details
+```
 
-1. **Generate a concise short name** (2-4 words) for the branch:
-   - Analyze the feature description and extract the most meaningful keywords
-   - Create a 2-4 word short name that captures the essence of the feature
-   - Use action-noun format when possible (e.g., "add-user-auth", "fix-payment-bug")
-   - Preserve technical terms and acronyms (OAuth2, API, JWT, etc.)
-   - Keep it concise but descriptive enough to understand the feature at a glance
-   - Examples:
-     - "I want to add user authentication" → "user-auth"
-     - "Implement OAuth2 integration for the API" → "oauth2-api-integration"
-     - "Create a dashboard for analytics" → "analytics-dashboard"
-     - "Fix payment processing timeout bug" → "fix-payment-timeout"
+**Response:**
+```json
+{
+  "deviceId": "ABC123",
+  "model": "Galaxy S21",
+  "manufacturer": "Samsung",
+  "firmware": "Android 13",
+  "chipset": "Samsung Exynos",
+  "status": "CONNECTED",
+  "connected": true,
+  "currentSessionId": 1
+}
+```
 
-2. **Check for existing branches before creating new one**:
+#### Session Management
+```
+POST   /api/sessions/start       - Start capture session
+POST   /api/sessions/{id}/stop   - Stop session
+GET    /api/sessions/{id}        - Get session details
+GET    /api/sessions             - List all sessions
+GET    /api/sessions/recent      - Get recent sessions
+GET    /api/sessions/{id}/logs   - Stream logs (SSE)
+```
 
-   a. First, fetch all remote branches to ensure we have the latest information:
+#### KPI Data
+```
+GET    /api/kpis/session/{id}                - Consolidated KPIs
+GET    /api/kpis/session/{id}/aggregates     - All aggregates
+GET    /api/kpis/session/{id}/metric/{m}     - Specific metric
+GET    /api/kpis/session/{id}/category/{c}   - By category
+GET    /api/kpis/session/{id}/rf             - RF measurements
+```
 
-      ```bash
-      git fetch --all --prune
-      ```
+**Consolidated KPI Response:**
+```json
+{
+  "rsrp": -85.5,
+  "rsrq": -10.2,
+  "sinr": 15.3,
+  "throughput": {
+    "dl": 150.5,
+    "ul": 45.2
+  },
+  "ueState": "CONNECTED",
+  "rat": "LTE",
+  "rrcSuccessRate": 98.5,
+  "servingCell": {
+    "pci": 123,
+    "earfcn": 1850,
+    "band": 3
+  }
+}
+```
 
-   b. Find the highest feature number across all sources for the short-name:
-      - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/[0-9]+-<short-name>$'`
-      - Local branches: `git branch | grep -E '^[* ]*[0-9]+-<short-name>$'`
-      - Specs directories: Check for directories matching `specs/[0-9]+-<short-name>`
+#### Signaling Messages
+```
+GET    /api/records/session/{id}  - Paginated protocol messages
+GET    /api/records/{id}          - Specific message
+```
 
-   c. Determine the next available number:
-      - Extract all numbers from all three sources
-      - Find the highest number N
-      - Use N+1 for the new branch number
+**Paginated Response:**
+```json
+{
+  "content": [...],
+  "page": 0,
+  "size": 100,
+  "totalElements": 5000,
+  "totalPages": 50,
+  "first": true,
+  "last": false
+}
+```
 
-   d. Run the script `.specify/scripts/bash/create-new-feature.sh --json "$ARGUMENTS"` with the calculated number and short-name:
-      - Pass `--number N+1` and `--short-name "your-short-name"` along with the feature description
-      - Bash example: `.specify/scripts/bash/create-new-feature.sh --json "$ARGUMENTS" --json --number 5 --short-name "user-auth" "Add user authentication"`
-      - PowerShell example: `.specify/scripts/bash/create-new-feature.sh --json "$ARGUMENTS" -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
+#### Map & Analysis
+```
+GET    /api/sessions/{id}/map     - GPS-tracked data
+GET    /api/anomalies/session/{id} - Detected anomalies
+GET    /api/artifacts/session/{id} - Session artifacts
+GET    /api/artifacts/{id}/download - Download file
+```
 
-   **IMPORTANT**:
-   - Check all three sources (remote branches, local branches, specs directories) to find the highest number
-   - Only match branches/directories with the exact short-name pattern
-   - If no existing branches/directories found with this short-name, start with number 1
-   - You must only ever run this script once per feature
-   - The JSON is provided in the terminal as output - always refer to it to get the actual content you're looking for
-   - The JSON output will contain BRANCH_NAME and SPEC_FILE paths
-   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot")
+### Database Schema
 
-3. Load `.specify/templates/spec-template.md` to understand required sections.
+#### sessions
+```sql
+CREATE TABLE sessions (
+    id BIGINT PRIMARY KEY,
+    device_id VARCHAR(255) NOT NULL,
+    device_model VARCHAR(255),
+    firmware VARCHAR(255),
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
+    status VARCHAR(50) NOT NULL,
+    session_dir VARCHAR(500) NOT NULL
+);
+```
 
-4. Follow this execution flow:
+#### kpi_aggregates
+```sql
+CREATE TABLE kpi_aggregates (
+    id BIGINT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    metric VARCHAR(100) NOT NULL,
+    window_start TIMESTAMP NOT NULL,
+    window_end TIMESTAMP NOT NULL,
+    min_value DOUBLE,
+    avg_value DOUBLE,
+    max_value DOUBLE,
+    rat VARCHAR(20),
+    latitude DOUBLE,
+    longitude DOUBLE,
+    cell_id VARCHAR(50),
+    pci INTEGER
+);
+```
 
-    1. Parse user description from Input
-       If empty: ERROR "No feature description provided"
-    2. Extract key concepts from description
-       Identify: actors, actions, data, constraints
-    3. For unclear aspects:
-       - Make informed guesses based on context and industry standards
-       - Only mark with [NEEDS CLARIFICATION: specific question] if:
-         - The choice significantly impacts feature scope or user experience
-         - Multiple reasonable interpretations exist with different implications
-         - No reasonable default exists
-       - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
-       - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
-    4. Fill User Scenarios & Testing section
-       If no clear user flow: ERROR "Cannot determine user scenarios"
-    5. Generate Functional Requirements
-       Each requirement must be testable
-       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
-    6. Define Success Criteria
-       Create measurable, technology-agnostic outcomes
-       Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
-       Each criterion must be verifiable without implementation details
-    7. Identify Key Entities (if data involved)
-    8. Return: SUCCESS (spec ready for planning)
+#### records
+```sql
+CREATE TABLE records (
+    id BIGINT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    protocol VARCHAR(20) NOT NULL,
+    direction VARCHAR(2) NOT NULL,
+    message_type VARCHAR(100),
+    layer VARCHAR(10),
+    frame_number INTEGER,
+    hex_data TEXT,
+    decoded_data TEXT,
+    length INTEGER
+);
+```
 
-5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+#### anomalies
+```sql
+CREATE TABLE anomalies (
+    id BIGINT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    latitude DOUBLE,
+    longitude DOUBLE,
+    details_json TEXT
+);
+```
 
-6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
+#### gps_traces
+```sql
+CREATE TABLE gps_traces (
+    id BIGINT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    latitude DOUBLE NOT NULL,
+    longitude DOUBLE NOT NULL,
+    altitude DOUBLE,
+    speed DOUBLE
+);
+```
 
-   a. **Create Spec Quality Checklist**: Generate a checklist file at `FEATURE_DIR/checklists/requirements.md` using the checklist template structure with these validation items:
+#### artifacts
+```sql
+CREATE TABLE artifacts (
+    id BIGINT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    path VARCHAR(500) NOT NULL,
+    size BIGINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-      ```markdown
-      # Specification Quality Checklist: [FEATURE NAME]
-      
-      **Purpose**: Validate specification completeness and quality before proceeding to planning
-      **Created**: [DATE]
-      **Feature**: [Link to spec.md]
-      
-      ## Content Quality
-      
-      - [ ] No implementation details (languages, frameworks, APIs)
-      - [ ] Focused on user value and business needs
-      - [ ] Written for non-technical stakeholders
-      - [ ] All mandatory sections completed
-      
-      ## Requirement Completeness
-      
-      - [ ] No [NEEDS CLARIFICATION] markers remain
-      - [ ] Requirements are testable and unambiguous
-      - [ ] Success criteria are measurable
-      - [ ] Success criteria are technology-agnostic (no implementation details)
-      - [ ] All acceptance scenarios are defined
-      - [ ] Edge cases are identified
-      - [ ] Scope is clearly bounded
-      - [ ] Dependencies and assumptions identified
-      
-      ## Feature Readiness
-      
-      - [ ] All functional requirements have clear acceptance criteria
-      - [ ] User scenarios cover primary flows
-      - [ ] Feature meets measurable outcomes defined in Success Criteria
-      - [ ] No implementation details leak into specification
-      
-      ## Notes
-      
-      - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
-      ```
+### KPI Metrics
 
-   b. **Run Validation Check**: Review the spec against each checklist item:
-      - For each item, determine if it passes or fails
-      - Document specific issues found (quote relevant spec sections)
+#### Signal Quality
+- **RSRP** - Reference Signal Received Power (dBm)
+- **RSRQ** - Reference Signal Received Quality (dB)
+- **SINR** - Signal-to-Interference-plus-Noise Ratio (dB)
+- **RSCP** - Received Signal Code Power (dBm) - WCDMA
+- **Ec/Io** - Energy per chip / Interference (dB) - WCDMA
+- **RXLEV** - RX Level (dBm) - GSM
+- **RXQUAL** - RX Quality - GSM
 
-   c. **Handle Validation Results**:
+#### Success Rates
+- **RRC_SR** - RRC Connection Success Rate (%)
+- **RACH_SR** - RACH Success Rate (%)
+- **HO_SR** - Handover Success Rate (%)
+- **ERAB_SR** - E-RAB Setup Success Rate (%)
+- **ATTACH_SR** - Attach Success Rate (%)
+- **TAU_SR** - TAU Success Rate (%)
 
-      - **If all items pass**: Mark checklist complete and proceed to step 6
+#### Performance
+- **THROUGHPUT_DL** - Downlink Throughput (Mbps)
+- **THROUGHPUT_UL** - Uplink Throughput (Mbps)
+- **LATENCY** - Round-trip latency (ms)
+- **PACKET_LOSS** - Packet Loss Rate (%)
+- **JITTER** - Jitter (ms)
 
-      - **If items fail (excluding [NEEDS CLARIFICATION])**:
-        1. List the failing items and specific issues
-        2. Update the spec to address each issue
-        3. Re-run validation until all items pass (max 3 iterations)
-        4. If still failing after 3 iterations, document remaining issues in checklist notes and warn user
+### Configuration
 
-      - **If [NEEDS CLARIFICATION] markers remain**:
-        1. Extract all [NEEDS CLARIFICATION: ...] markers from the spec
-        2. **LIMIT CHECK**: If more than 3 markers exist, keep only the 3 most critical (by scope/security/UX impact) and make informed guesses for the rest
-        3. For each clarification needed (max 3), present options to user in this format:
+#### application.yml
+```yaml
+eca:
+  tools:
+    scat:
+      path: ./scat
+    adb:
+      path: adb
+    tshark:
+      path: tshark
+  storage:
+    base-dir: ./data/sessions
+  device:
+    detection-interval: 3s
 
-           ```markdown
-           ## Question [N]: [Topic]
-           
-           **Context**: [Quote relevant spec section]
-           
-           **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
-           
-           **Suggested Answers**:
-           
-           | Option | Answer | Implications |
-           |--------|--------|--------------|
-           | A      | [First suggested answer] | [What this means for the feature] |
-           | B      | [Second suggested answer] | [What this means for the feature] |
-           | C      | [Third suggested answer] | [What this means for the feature] |
-           | Custom | Provide your own answer | [Explain how to provide custom input] |
-           
-           **Your choice**: _[Wait for user response]_
-           ```
+spring:
+  r2dbc:
+    url: r2dbc:h2:file:///./data/eca
+  application:
+    name: extended-cellular-analyzer
 
-        4. **CRITICAL - Table Formatting**: Ensure markdown tables are properly formatted:
-           - Use consistent spacing with pipes aligned
-           - Each cell should have spaces around content: `| Content |` not `|Content|`
-           - Header separator must have at least 3 dashes: `|--------|`
-           - Test that the table renders correctly in markdown preview
-        5. Number questions sequentially (Q1, Q2, Q3 - max 3 total)
-        6. Present all questions together before waiting for responses
-        7. Wait for user to respond with their choices for all questions (e.g., "Q1: A, Q2: Custom - [details], Q3: B")
-        8. Update the spec by replacing each [NEEDS CLARIFICATION] marker with the user's selected or provided answer
-        9. Re-run validation after all clarifications are resolved
+server:
+  port: 8080
+```
 
-   d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
+## Frontend Specifications
 
-7. Report completion with branch name, spec file path, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
+### Technology Stack
+- **Framework:** Next.js 14
+- **Language:** TypeScript 5.x
+- **Desktop:** Tauri 2.x
+- **UI:** React 18
+- **Styling:** Tailwind CSS
+- **Charts:** Recharts
+- **Terminal:** xterm.js
+- **Maps:** MapLibre GL
 
-**NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
+### Main Components
 
-## General Guidelines
+#### ModularDashboard
+- 4-panel grid layout
+- Customizable panel content
+- Layout switcher (2×2, 1×4, 4×1, 1×1)
+- Real-time data updates
 
-## Quick Guidelines
+#### XCALRFSummary
+- UE state display
+- Throughput metrics (DL/UL)
+- LTE PCell/SCells (8 cells)
+- NR PCell/SCells (8 cells)
+- Signal quality (RSRP, RSRQ, SINR)
+- Cell info (PCI, EARFCN, Band)
 
-- Focus on **WHAT** users need and **WHY**.
-- Avoid HOW to implement (no tech stack, APIs, code structure).
-- Written for business stakeholders, not developers.
-- DO NOT create any checklists that are embedded in the spec. That will be a separate command.
+#### XCALSignalingViewer
+- Protocol filter (RRC, NAS, MAC, RLC, PDCP, IP)
+- Direction filter (UL/DL)
+- Paginated message list
+- Hex dump view
+- Decoded message view
+- Frame number tracking
 
-### Section Requirements
+#### EnhancedTerminal
+- xterm.js integration
+- Real-time log streaming (SSE)
+- Color-coded logs
+- Auto-scroll toggle
+- Clear and export functions
 
-- **Mandatory sections**: Must be completed for every feature
-- **Optional sections**: Include only when relevant to the feature
-- When a section doesn't apply, remove it entirely (don't leave as "N/A")
+#### MapView
+- GPS-tracked network quality
+- Heat map overlay
+- Signal strength visualization
+- Anomaly markers
+- Route playback
 
-### For AI Generation
+#### KPI Charts
+- Line charts
+- Area charts
+- Bar charts
+- 8 metrics available
+- Time-series data
+- Statistics display
 
-When creating this spec from a user prompt:
+### API Client
 
-1. **Make informed guesses**: Use context, industry standards, and common patterns to fill gaps
-2. **Document assumptions**: Record reasonable defaults in the Assumptions section
-3. **Limit clarifications**: Maximum 3 [NEEDS CLARIFICATION] markers - use only for critical decisions that:
-   - Significantly impact feature scope or user experience
-   - Have multiple reasonable interpretations with different implications
-   - Lack any reasonable default
-4. **Prioritize clarifications**: scope > security/privacy > user experience > technical details
-5. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
-6. **Common areas needing clarification** (only if no reasonable default exists):
-   - Feature scope and boundaries (include/exclude specific use cases)
-   - User types and permissions (if multiple conflicting interpretations possible)
-   - Security/compliance requirements (when legally/financially significant)
+```typescript
+// frontend/src/utils/api.ts
+export const api = {
+  getDevices(): Promise<Device[]>
+  getSessions(page, size): Promise<PaginatedResponse<Session>>
+  getSession(id): Promise<Session>
+  startSession(deviceId): Promise<Session>
+  stopSession(sessionId): Promise<void>
+  getKpis(sessionId): Promise<KpiData>
+  getRecords(sessionId, page, size): Promise<PaginatedResponse<Record>>
+  getMapData(sessionId): Promise<MapData>
+  streamLogs(sessionId, onMessage, onError): Promise<EventSource>
+}
+```
 
-**Examples of reasonable defaults** (don't ask about these):
+## External Tools Integration
 
-- Data retention: Industry-standard practices for the domain
-- Performance targets: Standard web/mobile app expectations unless specified
-- Error handling: User-friendly messages with appropriate fallbacks
-- Authentication method: Standard session-based or OAuth2 for web apps
-- Integration patterns: RESTful APIs unless specified otherwise
+### SCAT (Python)
+- **Purpose:** Convert baseband logs to PCAP
+- **Location:** `./scat/`
+- **Command:** `python3 -m scat.main -t qc -u --pcap output.pcap`
+- **Supported:** Qualcomm, Samsung, HiSilicon, Unisoc
 
-### Success Criteria Guidelines
+### TShark
+- **Purpose:** PCAP analysis
+- **Command:** `tshark -r input.pcap -T json`
+- **Protocols:** RRC, NAS, MAC, RLC, PDCP, IP
 
-Success criteria must be:
+### ADB
+- **Purpose:** Device detection and communication
+- **Commands:**
+  - `adb devices` - List devices
+  - `adb -s {id} shell getprop` - Get properties
+  - `adb -s {id} logcat` - Capture logs
 
-1. **Measurable**: Include specific metrics (time, percentage, count, rate)
-2. **Technology-agnostic**: No mention of frameworks, languages, databases, or tools
-3. **User-focused**: Describe outcomes from user/business perspective, not system internals
-4. **Verifiable**: Can be tested/validated without knowing implementation details
+## Data Flow
 
-**Good examples**:
+### Capture Flow
+```
+1. User connects device via USB
+2. ADB detects device
+3. Backend creates session
+4. SCAT starts capture
+5. Logs stream to backend
+6. Backend parses and stores
+7. Frontend displays real-time
+```
 
-- "Users can complete checkout in under 3 minutes"
-- "System supports 10,000 concurrent users"
-- "95% of searches return results in under 1 second"
-- "Task completion rate improves by 40%"
+### KPI Calculation Flow
+```
+1. SCAT converts logs to PCAP
+2. Backend parses PCAP
+3. Extract protocol messages
+4. Calculate KPIs
+5. Store in database
+6. Aggregate by time window
+7. Serve via API
+```
 
-**Bad examples** (implementation-focused):
+## Performance Requirements
 
-- "API response time is under 200ms" (too technical, use "Users see results instantly")
-- "Database can handle 1000 TPS" (implementation detail, use user-facing metric)
-- "React components render efficiently" (framework-specific)
-- "Redis cache hit rate above 80%" (technology-specific)
+### Response Times
+- Device list: < 100ms
+- KPI data: < 50ms
+- Signaling messages (100): < 200ms
+- Log streaming: Real-time (< 10ms latency)
+
+### Scalability
+- Concurrent sessions: 10+
+- Messages per session: 100,000+
+- Database size: 10GB+
+- Memory usage: < 2GB
+
+### Reliability
+- Uptime: 99.9%
+- Data integrity: 100%
+- Error recovery: Automatic
+- Crash recovery: Session resume
+
+## Security Specifications
+
+### Current (MVP)
+- CORS enabled for frontend
+- Input validation
+- Error handling
+- No authentication (local use)
+
+### Planned (Sprint 2)
+- JWT authentication
+- Role-based access control
+- API key management
+- Audit logging
+- Data encryption at rest
+
+## Testing Specifications
+
+### Unit Tests
+- Controllers: 90% coverage
+- Services: 95% coverage
+- Repositories: 85% coverage
+
+### Integration Tests
+- API endpoints: 100%
+- Database operations: 100%
+- External tool integration: 80%
+
+### E2E Tests
+- User workflows: 100%
+- Multi-device scenarios: 80%
+- Error scenarios: 90%
+
+## Deployment Specifications
+
+### Development
+```bash
+# Backend
+./mvnw spring-boot:run
+
+# Frontend
+cd frontend && npm run dev
+```
+
+### Production
+```bash
+# Backend JAR
+./mvnw clean package
+java -jar target/p2-0.0.1-SNAPSHOT.jar
+
+# Frontend Desktop App
+cd frontend
+npm run tauri:build
+# Output: frontend/src-tauri/target/release/
+```
+
+### Docker (Planned)
+```dockerfile
+FROM eclipse-temurin:21-jre
+COPY target/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+```
+
+## Monitoring & Logging
+
+### Logging Levels
+- **ERROR** - Critical failures
+- **WARN** - Potential issues
+- **INFO** - Important events
+- **DEBUG** - Detailed information
+
+### Metrics (Actuator)
+- `/actuator/health` - Health check
+- `/actuator/metrics` - System metrics
+- `/actuator/prometheus` - Prometheus export
+
+## Version Control
+
+### Branching Strategy
+- `main` - Production-ready code
+- `develop` - Integration branch
+- `feature/*` - Feature branches
+- `hotfix/*` - Emergency fixes
+
+### Commit Convention
+```
+<type>(<scope>): <subject>
+
+feat: New feature
+fix: Bug fix
+docs: Documentation
+style: Formatting
+refactor: Code restructuring
+test: Tests
+chore: Maintenance
+```
+
+---
+
+**Status:** Specifications Complete ✅  
+**Last Updated:** 2025-12-07  
+**Version:** 0.1.0

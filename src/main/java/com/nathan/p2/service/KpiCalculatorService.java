@@ -19,6 +19,9 @@ public class KpiCalculatorService {
     
     private final KpiAggregateRepository kpiRepository;
     private final TSharkIntegrationService tsharkService;
+    private final DetailedKpiExtractor detailedExtractor;
+    private final MissingKpiExtractor missingKpiExtractor;
+    private final ConfigurationKpiExtractor configurationExtractor;
 
     public Mono<Void> calculate(Long sessionId, Path pcapFile) {
         log.info("📊 Calculating ALL KPIs for ALL RATs (5G/LTE/WCDMA/GSM) - Session {}", sessionId);
@@ -72,7 +75,16 @@ public class KpiCalculatorService {
             calculateThroughput(sessionId, pcapFile),
             calculateLatency(sessionId, pcapFile),
             calculatePacketLoss(sessionId, pcapFile),
-            calculateJitter(sessionId, pcapFile)
+            calculateJitter(sessionId, pcapFile),
+            
+            // === Detailed KPIs (by cause/type/cell) ===
+            detailedExtractor.extractAll(sessionId, pcapFile),
+            
+            // === Missing KPIs (auth, bearer, PDCP, BLER, etc.) ===
+            missingKpiExtractor.extractAll(sessionId, pcapFile),
+            
+            // === Configuration KPIs (QoS, RRC config tracking) ===
+            extractConfigurationKpis(sessionId, pcapFile)
         )
         .then()
         .doOnSuccess(v -> log.info("✅ All KPIs calculated for session {}", sessionId))
@@ -543,6 +555,30 @@ public class KpiCalculatorService {
     }
 
     // ==================== Helper ====================
+    
+    private Mono<Void> extractConfigurationKpis(Long sessionId, Path pcapFile) {
+        return Mono.fromCallable(() -> configurationExtractor.extractConfigurationKpis(pcapFile))
+                .flatMap(configKpis -> {
+                    // Save QOS_CONFIG KPI
+                    var qosConfig = configKpis.get("QOS_CONFIG");
+                    int qosChanges = qosConfig.get("change_count").asInt();
+                    
+                    // Save RRC_CONFIG KPI
+                    var rrcConfig = configKpis.get("RRC_CONFIG");
+                    int rrcReconfigs = rrcConfig.get("reconfig_count").asInt();
+                    
+                    return Flux.merge(
+                        kpiRepository.save(createKpi(sessionId, "QOS_CONFIG_CHANGES", 
+                                (double) qosChanges, (double) qosChanges, (double) qosChanges, "LTE")),
+                        kpiRepository.save(createKpi(sessionId, "RRC_CONFIG_RECONFIGS", 
+                                (double) rrcReconfigs, (double) rrcReconfigs, (double) rrcReconfigs, "LTE"))
+                    ).then();
+                })
+                .doOnSuccess(v -> log.info("✅ Configuration KPIs extracted for session {}", sessionId))
+                .doOnError(e -> log.error("❌ Configuration KPI extraction failed: {}", e.getMessage()))
+                .onErrorResume(e -> Mono.empty())
+                .then();
+    }
     
     private KpiAggregate createKpi(Long sessionId, String metric, Double avg, Double min, Double max, String rat) {
         LocalDateTime now = LocalDateTime.now();

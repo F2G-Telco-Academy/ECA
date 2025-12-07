@@ -55,5 +55,21 @@ CREATE TABLE IF NOT EXISTS gps_traces (
     speed DOUBLE
 );
 
+CREATE TABLE IF NOT EXISTS records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    protocol VARCHAR(20) NOT NULL,
+    direction VARCHAR(2) NOT NULL,
+    message_type VARCHAR(100),
+    layer VARCHAR(10),
+    frame_number INTEGER,
+    hex_data TEXT,
+    decoded_data TEXT,
+    length INTEGER
+);
+
 CREATE INDEX IF NOT EXISTS idx_kpi_session ON kpi_aggregates(session_id);
 CREATE INDEX IF NOT EXISTS idx_gps_session ON gps_traces(session_id);
+CREATE INDEX IF NOT EXISTS idx_records_session ON records(session_id);
+CREATE INDEX IF NOT EXISTS idx_records_protocol ON records(session_id, protocol);

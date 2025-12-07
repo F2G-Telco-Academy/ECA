@@ -1,135 +1,521 @@
----
-description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+# Extended Cellular Analyzer - Implementation Guide
+
+## Current Implementation Status
+
+### ✅ Sprint 1 - MVP (COMPLETE)
+
+All core features have been implemented and tested. The system is production-ready for local deployment.
+
 ---
 
-## User Input
+## Implementation Architecture
 
-```text
-$ARGUMENTS
+### Backend Structure
+```
+src/main/java/com/nathan/p2/
+├── controller/          # REST API endpoints
+│   ├── DeviceController.java
+│   ├── SessionController.java
+│   ├── KpiController.java
+│   ├── RecordController.java
+│   ├── MapDataController.java
+│   ├── AnomalyController.java
+│   └── ArtifactController.java
+├── service/             # Business logic
+│   ├── DeviceDetectorService.java
+│   ├── SessionService.java
+│   ├── KpiService.java
+│   ├── RecordService.java
+│   ├── CaptureOrchestrationService.java
+│   └── ExternalToolService.java
+├── repository/          # Data access
+│   ├── SessionRepository.java
+│   ├── KpiAggregateRepository.java
+│   ├── RecordRepository.java
+│   ├── AnomalyRepository.java
+│   └── GpsTraceRepository.java
+├── domain/              # Entities
+│   ├── Session.java
+│   ├── KpiAggregate.java
+│   ├── Record.java
+│   ├── Anomaly.java
+│   └── GpsTrace.java
+├── dto/                 # Data transfer objects
+│   ├── DeviceDto.java
+│   ├── KpiDataDto.java
+│   ├── RecordDto.java
+│   └── PaginatedResponse.java
+├── config/              # Configuration
+│   └── ToolsConfig.java
+└── util/                # Utilities
+    └── PlatformUtils.java
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+### Frontend Structure
+```
+frontend/src/
+├── components/          # React components
+│   ├── ModularDashboard.tsx
+│   ├── XCALRFSummary.tsx
+│   ├── XCALSignalingViewer.tsx
+│   ├── XCALGraphView.tsx
+│   ├── EnhancedTerminal.tsx
+│   ├── MapView.tsx
+│   ├── SessionControlPanel.tsx
+│   └── MultiDeviceGrid.tsx
+├── pages/               # Next.js pages
+│   ├── index.tsx
+│   ├── xcal.tsx
+│   └── _app.tsx
+├── utils/               # Utilities
+│   └── api.ts
+└── types/               # TypeScript types
+    └── index.ts
+```
 
-## Outline
+---
 
-1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+## How to Implement New Features
 
-2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
-   - Scan all checklist files in the checklists/ directory
-   - For each checklist, count:
-     - Total items: All lines matching `- [ ]` or `- [X]` or `- [x]`
-     - Completed items: Lines matching `- [X]` or `- [x]`
-     - Incomplete items: Lines matching `- [ ]`
-   - Create a status table:
+### Adding a New Backend Endpoint
 
-     ```text
-     | Checklist | Total | Completed | Incomplete | Status |
-     |-----------|-------|-----------|------------|--------|
-     | ux.md     | 12    | 12        | 0          | ✓ PASS |
-     | test.md   | 8     | 5         | 3          | ✗ FAIL |
-     | security.md | 6   | 6         | 0          | ✓ PASS |
-     ```
+#### 1. Create DTO
+```java
+// src/main/java/com/nathan/p2/dto/NewFeatureDto.java
+package com.nathan.p2.dto;
 
-   - Calculate overall status:
-     - **PASS**: All checklists have 0 incomplete items
-     - **FAIL**: One or more checklists have incomplete items
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-   - **If any checklist is incomplete**:
-     - Display the table with incomplete item counts
-     - **STOP** and ask: "Some checklists are incomplete. Do you want to proceed with implementation anyway? (yes/no)"
-     - Wait for user response before continuing
-     - If user says "no" or "wait" or "stop", halt execution
-     - If user says "yes" or "proceed" or "continue", proceed to step 3
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class NewFeatureDto {
+    private Long id;
+    private String name;
+    // Add fields
+}
+```
 
-   - **If all checklists are complete**:
-     - Display the table showing all checklists passed
-     - Automatically proceed to step 3
+#### 2. Create Domain Entity (if needed)
+```java
+// src/main/java/com/nathan/p2/domain/NewFeature.java
+package com.nathan.p2.domain;
 
-3. Load and analyze the implementation context:
-   - **REQUIRED**: Read tasks.md for the complete task list and execution plan
-   - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
-   - **IF EXISTS**: Read data-model.md for entities and relationships
-   - **IF EXISTS**: Read contracts/ for API specifications and test requirements
-   - **IF EXISTS**: Read research.md for technical decisions and constraints
-   - **IF EXISTS**: Read quickstart.md for integration scenarios
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
-4. **Project Setup Verification**:
-   - **REQUIRED**: Create/verify ignore files based on actual project setup:
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table("new_features")
+public class NewFeature {
+    @Id
+    private Long id;
+    private String name;
+    // Add fields
+}
+```
 
-   **Detection & Creation Logic**:
-   - Check if the following command succeeds to determine if the repository is a git repo (create/verify .gitignore if so):
+#### 3. Create Repository
+```java
+// src/main/java/com/nathan/p2/repository/NewFeatureRepository.java
+package com.nathan.p2.repository;
 
-     ```sh
-     git rev-parse --git-dir 2>/dev/null
-     ```
+import com.nathan.p2.domain.NewFeature;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 
-   - Check if Dockerfile* exists or Docker in plan.md → create/verify .dockerignore
-   - Check if .eslintrc* exists → create/verify .eslintignore
-   - Check if eslint.config.* exists → ensure the config's `ignores` entries cover required patterns
-   - Check if .prettierrc* exists → create/verify .prettierignore
-   - Check if .npmrc or package.json exists → create/verify .npmignore (if publishing)
-   - Check if terraform files (*.tf) exist → create/verify .terraformignore
-   - Check if .helmignore needed (helm charts present) → create/verify .helmignore
+@Repository
+public interface NewFeatureRepository extends ReactiveCrudRepository<NewFeature, Long> {
+    Flux<NewFeature> findByName(String name);
+}
+```
 
-   **If ignore file already exists**: Verify it contains essential patterns, append missing critical patterns only
-   **If ignore file missing**: Create with full pattern set for detected technology
+#### 4. Create Service
+```java
+// src/main/java/com/nathan/p2/service/NewFeatureService.java
+package com.nathan.p2.service;
 
-   **Common Patterns by Technology** (from plan.md tech stack):
-   - **Node.js/JavaScript/TypeScript**: `node_modules/`, `dist/`, `build/`, `*.log`, `.env*`
-   - **Python**: `__pycache__/`, `*.pyc`, `.venv/`, `venv/`, `dist/`, `*.egg-info/`
-   - **Java**: `target/`, `*.class`, `*.jar`, `.gradle/`, `build/`
-   - **C#/.NET**: `bin/`, `obj/`, `*.user`, `*.suo`, `packages/`
-   - **Go**: `*.exe`, `*.test`, `vendor/`, `*.out`
-   - **Ruby**: `.bundle/`, `log/`, `tmp/`, `*.gem`, `vendor/bundle/`
-   - **PHP**: `vendor/`, `*.log`, `*.cache`, `*.env`
-   - **Rust**: `target/`, `debug/`, `release/`, `*.rs.bk`, `*.rlib`, `*.prof*`, `.idea/`, `*.log`, `.env*`
-   - **Kotlin**: `build/`, `out/`, `.gradle/`, `.idea/`, `*.class`, `*.jar`, `*.iml`, `*.log`, `.env*`
-   - **C++**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.so`, `*.a`, `*.exe`, `*.dll`, `.idea/`, `*.log`, `.env*`
-   - **C**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.a`, `*.so`, `*.exe`, `Makefile`, `config.log`, `.idea/`, `*.log`, `.env*`
-   - **Swift**: `.build/`, `DerivedData/`, `*.swiftpm/`, `Packages/`
-   - **R**: `.Rproj.user/`, `.Rhistory`, `.RData`, `.Ruserdata`, `*.Rproj`, `packrat/`, `renv/`
-   - **Universal**: `.DS_Store`, `Thumbs.db`, `*.tmp`, `*.swp`, `.vscode/`, `.idea/`
+import com.nathan.p2.dto.NewFeatureDto;
+import com.nathan.p2.repository.NewFeatureRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
-   **Tool-Specific Patterns**:
-   - **Docker**: `node_modules/`, `.git/`, `Dockerfile*`, `.dockerignore`, `*.log*`, `.env*`, `coverage/`
-   - **ESLint**: `node_modules/`, `dist/`, `build/`, `coverage/`, `*.min.js`
-   - **Prettier**: `node_modules/`, `dist/`, `build/`, `coverage/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
-   - **Terraform**: `.terraform/`, `*.tfstate*`, `*.tfvars`, `.terraform.lock.hcl`
-   - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class NewFeatureService {
+    
+    private final NewFeatureRepository repository;
 
-5. Parse tasks.md structure and extract:
-   - **Task phases**: Setup, Tests, Core, Integration, Polish
-   - **Task dependencies**: Sequential vs parallel execution rules
-   - **Task details**: ID, description, file paths, parallel markers [P]
-   - **Execution flow**: Order and dependency requirements
+    public Mono<NewFeatureDto> getFeature(Long id) {
+        return repository.findById(id)
+                .map(this::toDto);
+    }
 
-6. Execute implementation following the task plan:
-   - **Phase-by-phase execution**: Complete each phase before moving to the next
-   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
-   - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
-   - **File-based coordination**: Tasks affecting the same files must run sequentially
-   - **Validation checkpoints**: Verify each phase completion before proceeding
+    private NewFeatureDto toDto(NewFeature entity) {
+        return NewFeatureDto.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build();
+    }
+}
+```
 
-7. Implementation execution rules:
-   - **Setup first**: Initialize project structure, dependencies, configuration
-   - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
-   - **Core development**: Implement models, services, CLI commands, endpoints
-   - **Integration work**: Database connections, middleware, logging, external services
-   - **Polish and validation**: Unit tests, performance optimization, documentation
+#### 5. Create Controller
+```java
+// src/main/java/com/nathan/p2/controller/NewFeatureController.java
+package com.nathan.p2.controller;
 
-8. Progress tracking and error handling:
-   - Report progress after each completed task
-   - Halt execution if any non-parallel task fails
-   - For parallel tasks [P], continue with successful tasks, report failed ones
-   - Provide clear error messages with context for debugging
-   - Suggest next steps if implementation cannot proceed
-   - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
+import com.nathan.p2.dto.NewFeatureDto;
+import com.nathan.p2.service.NewFeatureService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
-9. Completion validation:
-   - Verify all required tasks are completed
-   - Check that implemented features match the original specification
-   - Validate that tests pass and coverage meets requirements
-   - Confirm the implementation follows the technical plan
-   - Report final status with summary of completed work
+/**
+ * REST controller for new feature operations.
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/new-features")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+public class NewFeatureController {
+    
+    private final NewFeatureService service;
 
-Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
+    @GetMapping("/{id}")
+    public Mono<NewFeatureDto> getFeature(@PathVariable Long id) {
+        log.debug("Fetching feature: {}", id);
+        return service.getFeature(id);
+    }
+}
+```
+
+#### 6. Update Database Schema
+```sql
+-- src/main/resources/schema.sql
+CREATE TABLE IF NOT EXISTS new_features (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_new_features_name ON new_features(name);
+```
+
+### Adding a New Frontend Component
+
+#### 1. Create Component
+```typescript
+// frontend/src/components/NewFeature.tsx
+import { useState, useEffect } from 'react'
+import { api } from '@/utils/api'
+
+interface NewFeatureProps {
+  featureId: string
+}
+
+export default function NewFeature({ featureId }: NewFeatureProps) {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await api.getNewFeature(featureId)
+        setData(result)
+      } catch (error) {
+        console.error('Failed to fetch feature:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [featureId])
+
+  if (loading) return <div>Loading...</div>
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-bold">{data?.name}</h2>
+      {/* Add content */}
+    </div>
+  )
+}
+```
+
+#### 2. Add API Method
+```typescript
+// frontend/src/utils/api.ts
+export const api = {
+  // ... existing methods
+
+  async getNewFeature(id: string): Promise<NewFeature> {
+    const res = await fetch(`${API_BASE}/new-features/${id}`)
+    if (!res.ok) throw new Error('Failed to fetch feature')
+    return res.json()
+  }
+}
+```
+
+#### 3. Add TypeScript Type
+```typescript
+// frontend/src/types/index.ts
+export interface NewFeature {
+  id: string
+  name: string
+  // Add fields
+}
+```
+
+---
+
+## Sprint 2 Implementation Guide
+
+### Report Generation
+
+#### Backend Implementation
+```java
+// 1. Create ReportController
+@RestController
+@RequestMapping("/api/reports")
+public class ReportController {
+    
+    @PostMapping("/{sessionId}/generate")
+    public Mono<Void> generateReport(
+            @PathVariable Long sessionId,
+            @RequestParam(defaultValue = "PDF") String format) {
+        return reportService.generateReport(sessionId, format);
+    }
+}
+
+// 2. Create ReportService
+@Service
+public class ReportService {
+    
+    public Mono<Void> generateReport(Long sessionId, String format) {
+        return switch (format) {
+            case "PDF" -> generatePdfReport(sessionId);
+            case "HTML" -> generateHtmlReport(sessionId);
+            case "CSV" -> generateCsvReport(sessionId);
+            default -> Mono.error(new IllegalArgumentException("Invalid format"));
+        };
+    }
+}
+```
+
+#### Frontend Implementation
+```typescript
+// Add to api.ts
+async generateReport(sessionId: number, format: 'PDF' | 'HTML' | 'CSV'): Promise<void> {
+  const res = await fetch(`${API_BASE}/reports/${sessionId}/generate?format=${format}`, {
+    method: 'POST'
+  })
+  if (!res.ok) throw new Error('Failed to generate report')
+}
+```
+
+### Authentication
+
+#### Backend Implementation
+```java
+// 1. Add Spring Security dependency to pom.xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+
+// 2. Create SecurityConfig
+@Configuration
+@EnableWebFluxSecurity
+public class SecurityConfig {
+    
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        return http
+                .csrf().disable()
+                .authorizeExchange()
+                .pathMatchers("/api/auth/**").permitAll()
+                .anyExchange().authenticated()
+                .and()
+                .oauth2ResourceServer()
+                .jwt()
+                .and()
+                .and()
+                .build();
+    }
+}
+
+// 3. Create AuthController
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+    
+    @PostMapping("/login")
+    public Mono<TokenResponse> login(@RequestBody LoginRequest request) {
+        return authService.authenticate(request);
+    }
+}
+```
+
+### Multi-Device Support
+
+#### Backend Implementation
+```java
+// 1. Update SessionService
+@Service
+public class SessionService {
+    
+    public Flux<Session> startMultipleSessions(List<String> deviceIds) {
+        return Flux.fromIterable(deviceIds)
+                .flatMap(deviceId -> captureService.startCapture(deviceId));
+    }
+}
+
+// 2. Create MultiSessionController
+@RestController
+@RequestMapping("/api/multi-sessions")
+public class MultiSessionController {
+    
+    @PostMapping("/start")
+    public Flux<Session> startMultipleSessions(@RequestBody List<String> deviceIds) {
+        return sessionService.startMultipleSessions(deviceIds);
+    }
+}
+```
+
+---
+
+## Testing Guidelines
+
+### Backend Unit Tests
+```java
+@SpringBootTest
+class NewFeatureServiceTest {
+    
+    @Autowired
+    private NewFeatureService service;
+    
+    @MockBean
+    private NewFeatureRepository repository;
+    
+    @Test
+    void shouldGetFeature() {
+        // Given
+        NewFeature feature = NewFeature.builder()
+                .id(1L)
+                .name("Test")
+                .build();
+        
+        when(repository.findById(1L))
+                .thenReturn(Mono.just(feature));
+        
+        // When
+        NewFeatureDto result = service.getFeature(1L).block();
+        
+        // Then
+        assertNotNull(result);
+        assertEquals("Test", result.getName());
+    }
+}
+```
+
+### Frontend Component Tests
+```typescript
+import { render, screen } from '@testing-library/react'
+import NewFeature from '@/components/NewFeature'
+
+describe('NewFeature', () => {
+  it('renders feature name', async () => {
+    render(<NewFeature featureId="1" />)
+    
+    const name = await screen.findByText('Test Feature')
+    expect(name).toBeInTheDocument()
+  })
+})
+```
+
+---
+
+## Deployment Guide
+
+### Development
+```bash
+# Backend
+./mvnw spring-boot:run
+
+# Frontend
+cd frontend && npm run dev
+```
+
+### Production Build
+```bash
+# Backend JAR
+./mvnw clean package
+java -jar target/p2-0.0.1-SNAPSHOT.jar
+
+# Frontend Desktop App
+cd frontend
+npm run tauri:build
+```
+
+### Docker Deployment (Sprint 3)
+```bash
+# Build images
+docker build -t eca-backend .
+docker build -t eca-frontend ./frontend
+
+# Run with Docker Compose
+docker-compose up -d
+```
+
+---
+
+## Best Practices
+
+### Code Quality
+- Use Lombok to reduce boilerplate
+- Write comprehensive JavaDoc
+- Follow reactive programming patterns
+- Handle errors gracefully
+- Log at appropriate levels
+
+### Performance
+- Use pagination for large datasets
+- Add database indexes
+- Implement caching where appropriate
+- Use reactive streams for backpressure
+
+### Security
+- Validate all inputs
+- Sanitize user data
+- Use parameterized queries
+- Implement rate limiting
+- Enable CORS properly
+
+### Testing
+- Write unit tests for all services
+- Write integration tests for APIs
+- Test error scenarios
+- Maintain 80%+ coverage
+
+---
+
+**Status:** Implementation Guide Complete ✅  
+**Last Updated:** 2025-12-07  
+**Next:** Sprint 2 Implementation

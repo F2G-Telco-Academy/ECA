@@ -3,26 +3,26 @@ package com.nathan.p2.service;
 import com.nathan.p2.config.ToolsConfig;
 import com.nathan.p2.service.process.ExternalToolService;
 import com.nathan.p2.service.process.ProcessSpec;
+import com.nathan.p2.util.PlatformUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * SCAT Integration Service - Based on actual SCAT patterns
+ * SCAT Integration Service
+ * Executes SCAT commands for baseband log capture
  * 
- * SCAT Command Pattern:
- * python3 -m scat.main -t qc -u --pcap output.pcap -P 4729 -H 127.0.0.1 -L ip,mac,rlc,pdcp,rrc,nas
- * 
- * Parsers: qc (Qualcomm), sec (Samsung), hisi (HiSilicon), unisoc (Unisoc)
- * Layers: ip, nas, rrc, pdcp, rlc, mac, qmi
- * Ports: 4729 (control plane), 47290 (user plane)
+ * Based on SCAT main.py patterns:
+ * - python3 -m scat -t qc -u --qmdl output.qmdl (Qualcomm)
+ * - python3 -m scat -t sec -u --sdmraw output.sdm (Samsung)
+ * - python3 -m scat -t mtk -u (MediaTek)
  */
 @Slf4j
 @Service
@@ -31,91 +31,101 @@ public class ScatIntegrationService {
     private final ExternalToolService toolService;
     private final ToolsConfig config;
 
-    /**
-     * Start SCAT capture with USB device
-     * Based on: scat/src/scat/main.py patterns
-     */
-    public Mono<ProcessHandle> startUsbCapture(Long sessionId, Path pcapOutput) {
-        List<String> args = buildScatArgs(pcapOutput, true);
-        
-        ProcessSpec spec = ProcessSpec.builder()
-            .id("scat-usb-" + sessionId)
-            .command("python3")
-            .args(args)
-            .workingDirectory(Paths.get(config.getTools().getScat().getPath()).getParent())
-            .environment(Map.of(
-                "PYTHONPATH", Paths.get(config.getTools().getScat().getPath()).getParent().toString()
-            ))
-            .build();
+    public enum Chipset {
+        QUALCOMM("qc"),
+        SAMSUNG("sec"),
+        MEDIATEK("mtk"),
+        HISILICON("hisi"),
+        UNISOC("unisoc");
 
-        return toolService.start(spec)
-            .doOnSuccess(h -> log.info("SCAT USB capture started: {}", pcapOutput));
+        private final String scatType;
+
+        Chipset(String scatType) {
+            this.scatType = scatType;
+        }
+
+        public String getScatType() {
+            return scatType;
+        }
     }
 
     /**
-     * Read from dump file (offline analysis)
-     * Based on: scat/src/scat/main.py --dump option
+     * Start SCAT capture
+     * Based on: scat main.py
      */
-    public Mono<ProcessHandle> readDump(Long sessionId, Path dumpFile, Path pcapOutput) {
-        List<String> args = buildScatArgs(pcapOutput, false);
-        args.add("-d");
-        args.add(dumpFile.toString());
-        
-        ProcessSpec spec = ProcessSpec.builder()
-            .id("scat-dump-" + sessionId)
-            .command("python3")
-            .args(args)
-            .workingDirectory(Paths.get(config.getTools().getScat().getPath()).getParent())
-            .environment(Map.of(
-                "PYTHONPATH", Paths.get(config.getTools().getScat().getPath()).getParent().toString()
-            ))
-            .build();
-
-        return toolService.start(spec)
-            .doOnSuccess(h -> log.info("SCAT dump read started: {}", dumpFile));
-    }
-
-    /**
-     * Build SCAT command arguments based on actual patterns
-     */
-    private List<String> buildScatArgs(Path pcapOutput, boolean usb) {
+    public Mono<ProcessHandle> startCapture(String deviceId, Path outputFile, Chipset chipset) {
         List<String> args = new ArrayList<>();
-        
-        // Module invocation
         args.add("-m");
-        args.add("scat.main");
-        
-        // Parser type (from config or default to Qualcomm)
+        args.add("scat");
         args.add("-t");
-        args.add("qc"); // Qualcomm parser
+        args.add(chipset.getScatType());
+        args.add("-u");  // USB mode
         
-        // USB mode
-        if (usb) {
-            args.add("-u");
+        // Chipset-specific output format
+        switch (chipset) {
+            case QUALCOMM:
+                args.add("--qmdl");
+                args.add(outputFile.toString());
+                break;
+            case SAMSUNG:
+                args.add("--sdmraw");
+                args.add(outputFile.toString());
+                break;
+            default:
+                // Other chipsets output to stdout
+                break;
         }
         
-        // PCAP output
-        args.add("--pcap-file");
-        args.add(pcapOutput.toString());
+        String pythonPath = PlatformUtils.resolvePythonPath(config.getTools().getScat().getPythonPath());
         
-        // GSMTAP settings
-        args.add("-P");
-        args.add("4729"); // Control plane port
+        ProcessSpec spec = ProcessSpec.builder()
+            .id("scat-" + deviceId + "-" + System.currentTimeMillis())
+            .command(pythonPath)
+            .args(args)
+            .workingDirectory(Path.of(config.getTools().getScat().getPath()))
+            .environment(Map.of())
+            .captureStderr(true)
+            .build();
+
+        return toolService.start(spec)
+            .doOnSuccess(h -> log.info("SCAT capture started for device: {} on {}", deviceId, PlatformUtils.getPlatformName()))
+            .doOnError(e -> log.error("Failed to start SCAT capture: {}", e.getMessage()));
+    }
+
+    /**
+     * Stop SCAT capture
+     */
+    public Mono<Integer> stopCapture(ProcessHandle handle) {
+        return toolService.stop(handle)
+            .doOnSuccess(code -> log.info("SCAT capture stopped with code: {}", code));
+    }
+
+    /**
+     * List USB devices
+     * Based on: scat -l
+     */
+    public Flux<String> listDevices() {
+        List<String> args = List.of("-m", "scat", "-l");
         
-        args.add("--port-up");
-        args.add("47290"); // User plane port
+        String pythonPath = PlatformUtils.resolvePythonPath(config.getTools().getScat().getPythonPath());
         
-        args.add("-H");
-        args.add("127.0.0.1");
-        
-        // Layers to capture (all important layers)
-        args.add("-L");
-        args.add("ip,mac,rlc,pdcp,rrc,nas");
-        
-        // Display format
-        args.add("-f");
-        args.add("x"); // Hexadecimal
-        
-        return args;
+        ProcessSpec spec = ProcessSpec.builder()
+            .id("scat-list-" + System.currentTimeMillis())
+            .command(pythonPath)
+            .args(args)
+            .workingDirectory(Path.of(config.getTools().getScat().getPath()))
+            .environment(Map.of())
+            .captureStderr(true)
+            .build();
+
+        return toolService.start(spec)
+            .flatMapMany(toolService::logs);
+    }
+
+    /**
+     * Get SCAT stderr for debugging
+     */
+    public Flux<String> getStderr(ProcessHandle handle) {
+        return toolService.stderr(handle);
     }
 }
