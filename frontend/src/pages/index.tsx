@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import MenuBar from '@/components/MenuBar'
 import IconToolbar from '@/components/IconToolbar'
 import EnhancedSidebar from '@/components/EnhancedSidebar'
 import ModularDashboard from '@/components/ModularDashboard'
 import ProfessionalRFSummary from '@/components/ProfessionalRFSummary'
 import SignalingMessageViewer from '@/components/SignalingMessageViewer'
-import EnhancedTerminal from '@/components/EnhancedTerminal'
+const EnhancedTerminal = dynamic(() => import('@/components/EnhancedTerminal'), { ssr: false })
 import ProfessionalKPICharts from '@/components/ProfessionalKPICharts'
 import MapView from '@/components/MapView'
 import DetailedConfigTables from '@/components/DetailedConfigTables'

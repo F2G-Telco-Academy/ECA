@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl'
+import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { api } from '@/utils/api'
 
