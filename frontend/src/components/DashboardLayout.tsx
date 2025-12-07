@@ -1,3 +1,4 @@
+'use client'
 import { useState } from 'react'
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
