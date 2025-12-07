@@ -762,7 +762,7 @@ To democratize cellular network analysis by providing professional-grade tools t
 - SCAT (Python) - Baseband log conversion
 - TShark (C) - PCAP decoding
 - ADB (Java) - Device communication
-- Mobile Insight (Python) - KPI extraction
+- Custom KPI Extractor (Python) - Real-time KPI extraction (MobileInsight parity)
 
 ### 6.3 Data Model
 
@@ -949,7 +949,7 @@ To democratize cellular network analysis by providing professional-grade tools t
 │  SCAT          - Baseband log conversion (.sdm → .pcap)          │
 │  TShark        - PCAP decoding (GSMTAP → JSON)                   │
 │  ADB           - Device detection and log capture                │
-│  MobileInsight - KPI extraction (planned)                        │
+│  KPI Extractor - Real-time KPI extraction (MobileInsight parity) │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -977,6 +977,10 @@ To democratize cellular network analysis by providing professional-grade tools t
 - ✅ **KPI Management API** (KpiController, KpiService)
   - Consolidated KPI data structure (KpiDataDto)
   - Real-time KPI calculation and aggregation
+  - Custom KPI extractor with MobileInsight parity
+  - RRC connection success rate, RACH success rate
+  - Handover success rate, E-RAB setup success rate
+  - Signal quality metrics (RSRP, RSRQ, SINR)
   - Filtering by RAT, metric, category
   - GET /api/kpis/session/{id}, GET /api/kpis/session/{id}/aggregates
   - GET /api/kpis/session/{id}/metric/{metric}
@@ -1077,11 +1081,11 @@ To democratize cellular network analysis by providing professional-grade tools t
 #### Sprint 2: Enhanced Analysis (4 weeks)
 **Priority: High**
 
-- ⏳ **Advanced KPI Calculation**
-  - Implement MobileInsight-core integration
-  - Add success rate calculations (RRC, RACH, Handover, E-RAB)
+- ⏳ **Enhanced KPI Calculation**
+  - Expand custom KPI extractor with additional metrics
   - Add performance metrics (latency, packet loss, jitter)
-  - Implement time-window aggregation (1s, 5s, 30s, 1m)
+  - Implement configurable time-window aggregation (1s, 5s, 30s, 1m)
+  - Add throughput calculation (DL/UL)
 
 - ⏳ **Rule-Based Anomaly Detection**
   - Implement detection rules (coverage, quality, handover, drops)
@@ -1265,7 +1269,7 @@ To democratize cellular network analysis by providing professional-grade tools t
 ### 11.8 Next Steps (Immediate Priorities)
 
 **Week 1-2:**
-1. Implement MobileInsight-core integration for KPI calculation
+1. Expand custom KPI extractor with throughput and latency metrics
 2. Add rule-based anomaly detection
 3. Complete protocol message viewer UI
 4. Add unit tests for core services
