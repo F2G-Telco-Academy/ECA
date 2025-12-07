@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/tauri'
 import type {
   Device,
   Session,
@@ -16,13 +15,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 export const api = {
   // Device Management
   async getDevices(): Promise<Device[]> {
-    try {
-      return await invoke('get_devices')
-    } catch {
-      const res = await fetch(`${API_BASE}/devices`)
-      if (!res.ok) throw new Error('Failed to fetch devices')
-      return res.json()
-    }
+    const res = await fetch(`${API_BASE}/devices`)
+    if (!res.ok) throw new Error('Failed to fetch devices')
+    return res.json()
+  },
+
+  async getDevice(id: string): Promise<Device> {
+    const res = await fetch(`${API_BASE}/devices/${id}`)
+    if (!res.ok) throw new Error('Failed to fetch device')
+    return res.json()
   },
 
   // Session Management
@@ -106,15 +107,21 @@ export const api = {
     return res.blob()
   },
 
-  // Records
+  // Records (Signaling Messages)
   async getRecords(sessionId: string | number, page = 0, size = 100): Promise<PaginatedResponse<Record>> {
     const res = await fetch(`${API_BASE}/records/session/${sessionId}?page=${page}&size=${size}`)
     if (!res.ok) throw new Error('Failed to fetch records')
     return res.json()
   },
 
+  async getRecord(id: string | number): Promise<Record> {
+    const res = await fetch(`${API_BASE}/records/${id}`)
+    if (!res.ok) throw new Error('Failed to fetch record')
+    return res.json()
+  },
+
   // Log Streaming
-  async streamLogs(sessionId: number | string, onMessage: (log: string) => void, onError?: (error: Event) => void): Promise<EventSource> {
+  streamLogs(sessionId: number | string, onMessage: (log: string) => void, onError?: (error: Event) => void): EventSource {
     const eventSource = new EventSource(`${API_BASE}/sessions/${sessionId}/logs`)
     
     eventSource.onmessage = (event) => {
