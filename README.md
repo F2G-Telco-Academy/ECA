@@ -68,8 +68,8 @@ A professional cellular network analyzer that captures UE baseband logs, convert
 
 ```bash
 # Clone repository
-git clone <repository-url>
-cd p2
+git clone git@github.com:F2G-Telco-Academy/ECA.git
+cd ECA
 
 # Install Python dependencies
 pip install -r scat/requirements.txt
