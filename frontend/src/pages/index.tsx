@@ -8,6 +8,17 @@ export default function Home() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [devices, setDevices] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [activeTab, setActiveTab] = useState('devices')
+  const [openPanels, setOpenPanels] = useState<{[key: string]: boolean}>({
+    mobile: true,
+    scanner: false,
+    gps: false,
+    kpis: true
+  })
+  const [expandedKpis, setExpandedKpis] = useState<{[key: string]: boolean}>({})
+
+  const [activePanelTab, setActivePanelTab] = useState('signaling')
 
   useEffect(() => {
     const fetchDevices = async () => {
@@ -24,14 +35,24 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [])
 
+  const togglePanel = (panel: string) => {
+    setOpenPanels(prev => ({ ...prev, [panel]: !prev[panel] }))
+  }
+
+  const toggleKpi = (kpi: string) => {
+    setExpandedKpis(prev => ({ ...prev, [kpi]: !prev[kpi] }))
+  }
+
   return (
     <div className="h-screen flex flex-col bg-slate-900 text-white">
       {/* Top Menu Bar */}
       <div className="h-8 bg-slate-800 border-b border-slate-700 flex items-center px-2 text-xs">
         <button className="px-3 py-1 hover:bg-slate-700 rounded">File</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Edit</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">View</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Tools</button>
+        <button className="px-3 py-1 hover:bg-slate-700 rounded">Setting</button>
+        <button className="px-3 py-1 hover:bg-slate-700 rounded">Statistics/Status</button>
+        <button className="px-3 py-1 hover:bg-slate-700 rounded">User Defined</button>
+        <button className="px-3 py-1 hover:bg-slate-700 rounded">Call Statistics</button>
+        <button className="px-3 py-1 hover:bg-slate-700 rounded">Mobile Reset</button>
         <button className="px-3 py-1 hover:bg-slate-700 rounded">Window</button>
         <button className="px-3 py-1 hover:bg-slate-700 rounded">Help</button>
       </div>
@@ -39,18 +60,18 @@ export default function Home() {
       {/* Toolbar */}
       <div className="h-12 bg-slate-800 border-b border-slate-700 flex items-center px-3 gap-2">
         <button className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded text-sm font-medium">
-          Start Capture
+          Start
+        </button>
+        <button className="px-4 py-1.5 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium">
+          Pause
         </button>
         <button className="px-4 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm font-medium">
           Stop
         </button>
         <div className="w-px h-8 bg-slate-600 mx-2" />
-        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">
-          Export
-        </button>
-        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">
-          Settings
-        </button>
+        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">Export</button>
+        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">Settings</button>
+        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">Search</button>
         <div className="flex-1" />
         <div className="text-sm text-slate-400">
           {devices.length > 0 ? `${devices.length} device(s) connected` : 'No devices'}
@@ -61,129 +82,474 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-64 bg-slate-800 border-r border-slate-700 flex flex-col">
-          <div className="p-3 border-b border-slate-700">
-            <h3 className="text-sm font-semibold mb-2">Connected Devices</h3>
-            <div className="space-y-1">
-              {devices.length === 0 ? (
-                <div className="text-xs text-slate-500 py-2">No devices detected</div>
-              ) : (
-                devices.map((device) => (
-                  <button
-                    key={device.id}
-                    onClick={() => setSelectedDevice(device.id)}
-                    className={`w-full text-left px-3 py-2 rounded text-sm ${
-                      selectedDevice === device.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
-                    }`}
-                  >
-                    <div className="font-medium">{device.model || device.id}</div>
-                    <div className="text-xs opacity-75">{device.manufacturer}</div>
-                  </button>
-                ))
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700">
+            <button
+              onClick={() => setActiveTab('devices')}
+              className={`flex-1 px-3 py-2 text-xs font-semibold ${
+                activeTab === 'devices' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-750'
+              }`}
+            >
+              Devices List
+            </button>
+            <button
+              onClick={() => setActiveTab('ports')}
+              className={`flex-1 px-3 py-2 text-xs font-semibold ${
+                activeTab === 'ports' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-750'
+              }`}
+            >
+              Port Status
+            </button>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto text-xs">
+            {/* Mobile Section */}
+            <div className="border-b border-slate-700">
+              <button
+                onClick={() => togglePanel('mobile')}
+                className="w-full px-3 py-2 flex items-center text-sm font-semibold hover:bg-slate-750"
+              >
+                <span className="mr-2">{openPanels.mobile ? '▼' : '▶'}</span>
+                Mobile
+              </button>
+              {openPanels.mobile && (
+                <div className="px-3 py-1 space-y-1">
+                  {devices.length === 0 ? (
+                    <>
+                      <div className="text-slate-500 px-2 py-1">Mobile 1 (SM-G991U)</div>
+                      <div className="text-slate-500 px-2 py-1">Mobile 2</div>
+                      <div className="text-slate-500 px-2 py-1">Mobile 3</div>
+                      <div className="text-slate-500 px-2 py-1">Mobile 4</div>
+                    </>
+                  ) : (
+                    devices.map((device, idx) => (
+                      <button
+                        key={device.id}
+                        onClick={() => setSelectedDevice(device.id)}
+                        className={`w-full text-left px-2 py-1.5 rounded ${
+                          selectedDevice === device.id
+                            ? 'bg-blue-600 text-white'
+                            : 'hover:bg-slate-700 text-slate-300'
+                        }`}
+                      >
+                        Mobile {idx + 1} ({device.id})
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-3">
-            <h3 className="text-sm font-semibold mb-2">KPI Categories</h3>
-            <div className="space-y-1 text-sm">
-              <div className="py-1.5 px-2 hover:bg-slate-700 rounded cursor-pointer">RF Measurements</div>
-              <div className="py-1.5 px-2 hover:bg-slate-700 rounded cursor-pointer">Layer 3 Messages</div>
-              <div className="py-1.5 px-2 hover:bg-slate-700 rounded cursor-pointer">Throughput</div>
-              <div className="py-1.5 px-2 hover:bg-slate-700 rounded cursor-pointer">Call Statistics</div>
-              <div className="py-1.5 px-2 hover:bg-slate-700 rounded cursor-pointer">Handover Analysis</div>
+            {/* Scanner Section */}
+            <div className="border-b border-slate-700">
+              <button
+                onClick={() => togglePanel('scanner')}
+                className="w-full px-3 py-2 flex items-center text-sm font-semibold hover:bg-slate-750"
+              >
+                <span className="mr-2">{openPanels.scanner ? '▼' : '▶'}</span>
+                Scanner
+              </button>
+              {openPanels.scanner && (
+                <div className="px-3 py-1 space-y-1">
+                  <div className="text-slate-400 px-2 py-1">Scanner 1</div>
+                  <div className="text-slate-400 px-2 py-1">Scanner 2</div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
 
-        {/* Main Panel - Resizable Grid */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 bg-slate-900">
-            {/* Panel 1 - RF Summary */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
-              <div className="h-10 bg-slate-750 border-b border-slate-700 flex items-center justify-between px-3">
-                <span className="text-sm font-medium">RF Measurement Summary</span>
-                <button className="text-slate-400 hover:text-white">⚙</button>
+            {/* GPS Section */}
+            <div className="border-b border-slate-700">
+              <button
+                onClick={() => togglePanel('gps')}
+                className="w-full px-3 py-2 flex items-center text-sm font-semibold hover:bg-slate-750"
+              >
+                <span className="mr-2">{openPanels.gps ? '▼' : '▶'}</span>
+                GPS
+              </button>
+            </div>
+
+            {/* Supported KPIs Section */}
+            <div className="border-b border-slate-700">
+              <div className="px-3 py-2 text-sm font-semibold">Supported KPIs</div>
+              <div className="px-3 pb-2">
+                <input
+                  type="text"
+                  placeholder="Search Keyword"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-slate-300 placeholder-slate-500"
+                />
               </div>
-              <div className="flex-1 overflow-auto p-4">
-                {!selectedDevice ? (
-                  <div className="h-full flex items-center justify-center text-slate-500">
-                    Select a device to view RF measurements
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-slate-900 rounded p-3">
-                        <div className="text-xs text-slate-400 mb-1">RSRP</div>
-                        <div className="text-2xl font-bold text-green-400">-85 dBm</div>
-                      </div>
-                      <div className="bg-slate-900 rounded p-3">
-                        <div className="text-xs text-slate-400 mb-1">RSRQ</div>
-                        <div className="text-2xl font-bold text-blue-400">-10 dB</div>
-                      </div>
-                      <div className="bg-slate-900 rounded p-3">
-                        <div className="text-xs text-slate-400 mb-1">SINR</div>
-                        <div className="text-2xl font-bold text-yellow-400">15 dB</div>
-                      </div>
-                      <div className="bg-slate-900 rounded p-3">
-                        <div className="text-xs text-slate-400 mb-1">PCI</div>
-                        <div className="text-2xl font-bold text-purple-400">256</div>
-                      </div>
+
+              <div>
+                {/* LBS Message */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  LBS Message
+                </div>
+
+                {/* LCS Message */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  LCS Message
+                </div>
+
+                {/* PPP Frame/Mobile Packet Message */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  PPP Frame/Mobile Packet Message
+                </div>
+
+                {/* AirPCap Message */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  AirPCap Message
+                </div>
+
+                {/* HTTP/SIP Message */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  HTTP / SIP Message
+                </div>
+
+                {/* H.324m Message Viewer */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  H.324m Message Viewer
+                </div>
+
+                {/* Layer3 KPI */}
+                <div>
+                  <button
+                    onClick={() => toggleKpi('layer3')}
+                    className="w-full px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center"
+                  >
+                    <span className="mr-2 text-slate-500">{expandedKpis.layer3 ? '▼' : '▶'}</span>
+                    Layer3 KPI
+                  </button>
+                  {expandedKpis.layer3 && (
+                    <div className="pl-6">
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">LTE</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">NAS</div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                  )}
+                </div>
 
-            {/* Panel 2 - Signaling Messages */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
-              <div className="h-10 bg-slate-750 border-b border-slate-700 flex items-center justify-between px-3">
-                <span className="text-sm font-medium">Signaling Messages</span>
-                <button className="text-slate-400 hover:text-white">⚙</button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <SignalingMessageViewer sessionId={sessionId} />
-              </div>
-            </div>
+                {/* RF KPI */}
+                <div>
+                  <button
+                    onClick={() => toggleKpi('rf')}
+                    className="w-full px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center"
+                  >
+                    <span className="mr-2 text-slate-500">{expandedKpis.rf ? '▼' : '▶'}</span>
+                    RF KPI
+                  </button>
+                  {expandedKpis.rf && (
+                    <div className="pl-6">
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">RF Measurement Summary Info</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">NRDC RF Measurement Summary Info</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR Beamforming Information</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Benchmarking RF Summary</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Dynamic Spectrum Sharing</div>
+                    </div>
+                  )}
+                </div>
 
-            {/* Panel 3 - Terminal */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
-              <div className="h-10 bg-slate-750 border-b border-slate-700 flex items-center justify-between px-3">
-                <span className="text-sm font-medium">Live Logs</span>
-                <button className="text-slate-400 hover:text-white">⚙</button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <EnhancedTerminal sessionId={sessionId} />
-              </div>
-            </div>
+                {/* Qualcomm */}
+                <div>
+                  <button
+                    onClick={() => toggleKpi('qualcomm')}
+                    className="w-full px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center"
+                  >
+                    <span className="mr-2 text-slate-500">{expandedKpis.qualcomm ? '▼' : '▶'}</span>
+                    Qualcomm
+                  </button>
+                  {expandedKpis.qualcomm && (
+                    <div className="pl-6">
+                      {/* Message */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        Message
+                      </div>
 
-            {/* Panel 4 - KPI Charts */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
-              <div className="h-10 bg-slate-750 border-b border-slate-700 flex items-center justify-between px-3">
-                <span className="text-sm font-medium">KPI Trends</span>
-                <button className="text-slate-400 hover:text-white">⚙</button>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <div className="h-full flex items-center justify-center text-slate-500">
-                  KPI charts will appear here
+                      {/* Qualcomm DM Message */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        Qualcomm DM Message
+                      </div>
+
+                      {/* Qualcomm Mobile Message */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        Qualcomm Mobile Message
+                      </div>
+
+                      {/* Qualcomm Event Report Message */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        Qualcomm Event Report Message
+                      </div>
+
+                      {/* Qualcomm QChat Message Viewer */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        Qualcomm QChat Message Viewer
+                      </div>
+
+                      {/* Qualcomm L2 RLC Messages */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        Qualcomm L2 RLC Messages
+                      </div>
+
+                      {/* Common-Q */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Common-Q</div>
+
+                      {/* 5GNR-Q */}
+                      <button
+                        onClick={() => toggleKpi('qualcomm-5gnr')}
+                        className="w-full px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center"
+                      >
+                        <span className="mr-2 text-slate-500">{expandedKpis['qualcomm-5gnr'] ? '▼' : '▶'}</span>
+                        5GNR-Q
+                      </button>
+                      {expandedKpis['qualcomm-5gnr'] && (
+                        <div className="pl-6">
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR Information (MIB)</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR SIB Information (SIB1)</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR SigCell Information (Reconfig)</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR TDD UL DL Configuration</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR NSA RRC State</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR NSA Status Information</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR RRC State</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR SA Status Information</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR UE Capability</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR Failure Sets</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR SCG Mobility Statistics</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR EPS Fallback Statistics</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR Handover Statistics (Intra NR-HO)</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR Handover Event Information</div>
+                          <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">5GNR SCell State</div>
+                        </div>
+                      )}
+
+                      {/* LTE/Adv-Q Graph */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        LTE/Adv-Q Graph
+                      </div>
+
+                      {/* LTE/Adv-Q */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">LTE/Adv-Q</div>
+
+                      {/* WCDMA Graph */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        WCDMA Graph
+                      </div>
+
+                      {/* WCDMA Statistics */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">WCDMA Statistics</div>
+
+                      {/* WCDMA Status */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">WCDMA Status</div>
+
+                      {/* WCDMA Layer 3 */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">WCDMA Layer 3</div>
+
+                      {/* CDMA Graph */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                        <span className="mr-2 text-slate-500">▶</span>
+                        CDMA Graph
+                      </div>
+
+                      {/* CDMA Statistics */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">CDMA Statistics</div>
+
+                      {/* CDMA Status */}
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">CDMA Status</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Smart App (NO XCAL BRANDING) */}
+                <div>
+                  <button
+                    onClick={() => toggleKpi('smartapp')}
+                    className="w-full px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center"
+                  >
+                    <span className="mr-2 text-slate-500">{expandedKpis.smartapp ? '▼' : '▶'}</span>
+                    Smart App
+                  </button>
+                  {expandedKpis.smartapp && (
+                    <div className="pl-6">
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Smart App Message List</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Smart App Status</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Smart App Bluetooth LE Status</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">Smart Standalone Mode Setting</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">WiFi Scan List</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">WCDMA RF Info</div>
+                      <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer">WiFi Info</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Autocall KPI */}
+                <div className="px-3 py-1 hover:bg-slate-750 cursor-pointer flex items-center">
+                  <span className="mr-2 text-slate-500">▶</span>
+                  Autocall KPI
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Bottom Buttons */}
+          <div className="border-t border-slate-700 p-2 flex gap-2">
+            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+              Airplane
+            </button>
+            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+              Mobile Reset
+            </button>
+          </div>
+          <div className="border-t border-slate-700 p-2 flex gap-2">
+            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+              Select All
+            </button>
+            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+              Unselect All
+            </button>
+          </div>
+        </div>
+
+        {/* Main Panel */}
+        <div className="flex-1 flex flex-col bg-slate-900">
+          {/* Panel Tabs */}
+          <div className="flex bg-slate-800 border-b border-slate-700 overflow-x-auto">
+            <button
+              onClick={() => setActivePanelTab('signaling')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === 'signaling'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Signaling Message
+            </button>
+            <button
+              onClick={() => setActivePanelTab('rf')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === 'rf'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              RF Measurement Summary Info
+            </button>
+            <button
+              onClick={() => setActivePanelTab('5gnr-mib')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === '5gnr-mib'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              5GNR Information (MIB)
+            </button>
+            <button
+              onClick={() => setActivePanelTab('5gnr-sib')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === '5gnr-sib'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              5GNR SIB Information (SIB1)
+            </button>
+            <button
+              onClick={() => setActivePanelTab('5gnr-capability')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === '5gnr-capability'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              5GNR UE Capability
+            </button>
+            <button
+              onClick={() => setActivePanelTab('user-graph')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === 'user-graph'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              User Defined Graph
+            </button>
+            <button
+              onClick={() => setActivePanelTab('terminal')}
+              className={`px-4 py-2 text-sm whitespace-nowrap ${
+                activePanelTab === 'terminal'
+                  ? 'bg-slate-900 text-white border-b-2 border-blue-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Terminal Logs
+            </button>
+          </div>
+
+          {/* Panel Content */}
+          <div className="flex-1 overflow-hidden">
+            {activePanelTab === 'signaling' && (
+              <SignalingMessageViewer sessionId={sessionId} />
+            )}
+            {activePanelTab === 'rf' && (
+              <div className="h-full p-4 overflow-auto">
+                <div className="text-center text-slate-500">
+                  {!selectedDevice ? 'Select a device to view RF measurements' : 'RF Measurement data will appear here'}
+                </div>
+              </div>
+            )}
+            {activePanelTab === '5gnr-mib' && (
+              <div className="h-full p-4 overflow-auto">
+                <div className="text-center text-slate-500">5GNR MIB configuration data will appear here</div>
+              </div>
+            )}
+            {activePanelTab === '5gnr-sib' && (
+              <div className="h-full p-4 overflow-auto">
+                <div className="text-center text-slate-500">5GNR SIB1 configuration data will appear here</div>
+              </div>
+            )}
+            {activePanelTab === '5gnr-capability' && (
+              <div className="h-full p-4 overflow-auto">
+                <div className="text-center text-slate-500">5GNR UE Capability data will appear here</div>
+              </div>
+            )}
+            {activePanelTab === 'user-graph' && (
+              <div className="h-full p-4 overflow-auto">
+                <div className="text-center text-slate-500">User Defined Graphs will appear here</div>
+              </div>
+            )}
+            {activePanelTab === 'terminal' && (
+              <EnhancedTerminal sessionId={sessionId} />
+            )}
           </div>
         </div>
       </div>
 
       {/* Status Bar */}
-      <div className="h-6 bg-slate-800 border-t border-slate-700 flex items-center justify-between px-4 text-xs">
+      <div className="h-6 bg-blue-600 text-white flex items-center justify-between px-4 text-xs">
         <div className="flex items-center gap-4">
-          <span className={selectedDevice ? 'text-green-400' : 'text-red-400'}>
-            {selectedDevice ? '● Connected' : '○ Disconnected'}
+          <span className={selectedDevice ? 'text-white' : 'text-red-300'}>
+            {selectedDevice ? 'Logging' : 'No Logging'}
           </span>
-          <span className="text-slate-400">CPU: 0%</span>
-          <span className="text-slate-400">Memory: 0 MB</span>
+          <span className="text-red-300">No GPS</span>
+          <span>CPU: 0%</span>
+          <span>Memory: 0%</span>
         </div>
-        <div className="text-slate-400">Extended Cellular Analyzer v0.1.0</div>
+        <div>Extended Cellular Analyzer v0.1.0</div>
       </div>
     </div>
   )
