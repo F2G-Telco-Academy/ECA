@@ -5,7 +5,7 @@ import IconToolbar from '@/components/IconToolbar'
 import EnhancedSidebar from '@/components/EnhancedSidebar'
 import ModularDashboard from '@/components/ModularDashboard'
 import ProfessionalRFSummary from '@/components/ProfessionalRFSummary'
-import SignalingMessageViewer from '@/components/SignalingMessageViewer'
+const SignalingMessageViewer = dynamic(() => import('@/components/SignalingMessageViewer'), { ssr: false })
 const EnhancedTerminal = dynamic(() => import('@/components/EnhancedTerminal'), { ssr: false })
 import ProfessionalKPICharts from '@/components/ProfessionalKPICharts'
 import MapView from '@/components/MapView'

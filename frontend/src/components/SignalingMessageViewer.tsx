@@ -159,9 +159,9 @@ export default function SignalingMessageViewer({ sessionId }: SignalingMessageVi
                   </td>
                 </tr>
               ))}
-              <div ref={messagesEndRef} />
             </tbody>
           </table>
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Message Details Panel */}

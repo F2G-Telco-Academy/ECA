@@ -1,48 +1,65 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Terminal as XTerm } from 'xterm'
-import { FitAddon } from 'xterm-addon-fit'
-import 'xterm/css/xterm.css'
 
 export default function EnhancedTerminal({ sessionId }: { sessionId: string | null }) {
   const terminalRef = useRef<HTMLDivElement>(null)
-  const xtermRef = useRef<XTerm | null>(null)
+  const xtermRef = useRef<any>(null)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!terminalRef.current) return
-
-    const term = new XTerm({
-      theme: {
-        background: '#000000',
-        foreground: '#00ff00',
-        cursor: '#00ff00',
-      },
-      fontSize: 11,
-      fontFamily: 'Consolas, "Courier New", monospace',
-      cursorBlink: true,
-      rows: 40,
-      cols: 120
-    })
-
-    const fitAddon = new FitAddon()
-    term.loadAddon(fitAddon)
-    term.open(terminalRef.current)
-    fitAddon.fit()
-
-    xtermRef.current = term
-
-    const handleResize = () => fitAddon.fit()
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      term.dispose()
-    }
+    setMounted(true)
   }, [])
 
   useEffect(() => {
-    if (!sessionId || !xtermRef.current) return
+    if (!mounted || !terminalRef.current) return
+
+    let term: any
+    let fitAddon: any
+
+    const initTerminal = async () => {
+      const { Terminal } = await import('xterm')
+      const { FitAddon } = await import('xterm-addon-fit')
+      await import('xterm/css/xterm.css')
+
+      term = new Terminal({
+        theme: {
+          background: '#000000',
+          foreground: '#00ff00',
+          cursor: '#00ff00',
+        },
+        fontSize: 11,
+        fontFamily: 'Consolas, "Courier New", monospace',
+        cursorBlink: true,
+        rows: 40,
+        cols: 120
+      })
+
+      fitAddon = new FitAddon()
+      term.loadAddon(fitAddon)
+      term.open(terminalRef.current)
+      fitAddon.fit()
+
+      xtermRef.current = term
+
+      const handleResize = () => fitAddon.fit()
+      window.addEventListener('resize', handleResize)
+
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        term?.dispose()
+      }
+    }
+
+    initTerminal()
+
+    return () => {
+      term?.dispose()
+    }
+  }, [mounted])
+
+  useEffect(() => {
+    if (!sessionId || !xtermRef.current || !mounted) return
 
     const term = xtermRef.current
     term.clear()
@@ -77,7 +94,15 @@ export default function EnhancedTerminal({ sessionId }: { sessionId: string | nu
     }
 
     return () => eventSource.close()
-  }, [sessionId, autoScroll])
+  }, [sessionId, autoScroll, mounted])
+
+  if (!mounted) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black text-green-500">
+        <div>Loading terminal...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex flex-col bg-black">
