@@ -20,7 +20,7 @@ export default function EnhancedTerminal({ sessionId }: { sessionId: string | nu
     const initTerminal = async () => {
       const { Terminal } = await import('xterm')
       const { FitAddon } = await import('xterm-addon-fit')
-      await import('xterm/css/xterm.css')
+      // CSS is loaded via CDN or global import
 
       term = new Terminal({
         theme: {

@@ -18,7 +18,7 @@ export default function XCALSignalingViewer({ sessionId }: { sessionId: string |
   const [showDetail, setShowDetail] = useState(true)
   const [showElapsedTime, setShowElapsedTime] = useState(false)
   const [fontSize, setFontSize] = useState(12)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLTableRowElement>(null)
 
   useEffect(() => {
     if (!sessionId || isPaused) return
