@@ -18,7 +18,7 @@ export default function Toolbar({ onStartCapture, onStopCapture, isCapturing = f
           isCapturing ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
         }`}
       >
-        ▶ Start
+        Start
       </button>
       
       <button
@@ -28,7 +28,7 @@ export default function Toolbar({ onStartCapture, onStopCapture, isCapturing = f
           !isCapturing ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
         }`}
       >
-        ⏹ Stop
+        Stop
       </button>
 
       <div className="flex-1" />

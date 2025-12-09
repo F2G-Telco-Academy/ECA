@@ -1,11 +1,13 @@
 // Device and Session Types
 export interface Device {
-  id: string
   deviceId: string
-  deviceModel?: string
+  model?: string
+  manufacturer?: string
   firmware?: string
-  status: 'CONNECTED' | 'DISCONNECTED' | 'CAPTURING'
-  lastSeen?: string
+  chipset?: string
+  status: string
+  connected: boolean
+  currentSessionId?: number
 }
 
 export interface Session {
@@ -19,28 +21,60 @@ export interface Session {
   sessionDir?: string
 }
 
-// KPI Types
+// KPI Types - matching KpiDataDto
 export interface KpiData {
+  // Signal Quality
   rsrp?: number
   rsrq?: number
   sinr?: number
-  cqi?: number
-  mcs?: number
-  bler?: number
+  rscp?: number
+  ecio?: number
+  rxlev?: number
+  rxqual?: number
+  
+  // Throughput
   throughput?: {
     dl: number
     ul: number
   }
+  
+  // Cell Info
+  servingCell?: CellInfo
+  secondaryCells?: CellInfo[]
+  
+  // Connection State
+  ueState?: string
+  rat?: string
+  
+  // Success Rates
   rrcSuccessRate?: number
   rachSuccessRate?: number
   handoverSuccessRate?: number
+  erabSuccessRate?: number
   attachSuccessRate?: number
   tauSuccessRate?: number
-  latency?: {
-    min: number
-    avg: number
-    max: number
+  
+  // Performance
+  latency?: number
+  packetLoss?: number
+  jitter?: number
+  
+  // Legacy support
+  signalQuality?: {
+    rsrp?: number
+    rsrq?: number
+    sinr?: number
   }
+}
+
+export interface CellInfo {
+  pci?: number
+  earfcn?: number
+  band?: number
+  bandwidth?: number
+  duplexMode?: string
+  scs?: number
+  txBeamId?: number
 }
 
 export interface KpiAggregate {
@@ -71,13 +105,13 @@ export interface Record {
 export interface Anomaly {
   id: number
   sessionId: number
-  category: 'COVERAGE' | 'HANDOVER' | 'THROUGHPUT' | 'DROP' | 'LATENCY'
+  category: string
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  description?: string
   timestamp: string
   latitude?: number
   longitude?: number
-  detailsJson?: any
-  details?: string
+  detailsJson?: string
 }
 
 // Artifact Types

@@ -1,106 +1,130 @@
 import { useState, useEffect } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { api } from '@/utils/api'
+import type { KpiAggregate } from '@/types'
 
-interface UserDefinedGraphProps {
-  deviceId: string | null
+interface Props {
+  sessionId: string | null
 }
 
-export default function UserDefinedGraph({ deviceId }: UserDefinedGraphProps) {
+export default function UserDefinedGraph({ sessionId }: Props) {
+  const [aggregates, setAggregates] = useState<KpiAggregate[]>([])
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['RSRP', 'RSRQ', 'SINR'])
-  const [chartData, setChartData] = useState<any[]>([])
-
-  const availableMetrics = [
-    { id: 'RSRP', name: 'NR_Serv RSRP(Searcher)(P)', color: '#f59e0b' },
-    { id: 'RSRQ', name: 'NR_Serv RSRQ(Searcher)(P)', color: '#10b981' },
-    { id: 'SINR', name: 'NR_Serv SINR(Searcher)(P)', color: '#3b82f6' },
-    { id: 'DL_TP', name: 'DL Throughput', color: '#8b5cf6' },
-    { id: 'UL_TP', name: 'UL Throughput', color: '#ec4899' },
-  ]
+  const [expandedNodes, setExpandedNodes] = useState<{[key: string]: boolean}>({ qualcomm: true, '5gnr': true, pcell: true })
 
   useEffect(() => {
-    if (!deviceId) return
-
-    const fetchData = () => {
-      fetch(`/api/kpis/session/${deviceId}`)
-        .then(res => res.json())
-        .then(data => {
-          const newPoint = {
-            time: new Date().toLocaleTimeString(),
-            RSRP: data.nr?.ssRsrp || 0,
-            RSRQ: data.nr?.ssRsrq || 0,
-            SINR: data.nr?.sinr || 0,
-            DL_TP: data.throughput?.dl || 0,
-            UL_TP: data.throughput?.ul || 0,
-          }
-          setChartData(prev => [...prev, newPoint].slice(-50))
-        })
-        .catch(console.error)
+    if (!sessionId) return
+    
+    const fetch = async () => {
+      try {
+        const data = await api.getKpiAggregates(sessionId)
+        setAggregates(data)
+      } catch (err) {
+        console.error('Failed to fetch aggregates:', err)
+      }
     }
 
-    fetchData()
-    const interval = setInterval(fetchData, 2000)
+    fetch()
+    const interval = setInterval(fetch, 3000)
     return () => clearInterval(interval)
-  }, [deviceId])
+  }, [sessionId])
 
-  const toggleMetric = (metricId: string) => {
-    setSelectedMetrics(prev =>
-      prev.includes(metricId)
-        ? prev.filter(m => m !== metricId)
-        : [...prev, metricId]
+  const metrics = [
+    { id: 'RSRP', name: 'NR_Serv Cell RSRP(dBm)', color: '#f97316' },
+    { id: 'RSRQ', name: 'NR_Serv Cell RSRQ(dB)', color: '#3b82f6' },
+    { id: 'SINR', name: 'NR_Serv Cell SINR(dB)', color: '#10b981' },
+    { id: 'THROUGHPUT_DL', name: 'NR_DL Throughput(Mbps)', color: '#06b6d4' },
+    { id: 'THROUGHPUT_UL', name: 'NR_UL Throughput(Mbps)', color: '#8b5cf6' }
+  ]
+
+  const toggleMetric = (metric: string) => {
+    setSelectedMetrics(prev => 
+      prev.includes(metric) ? prev.filter(m => m !== metric) : [...prev, metric]
     )
   }
 
-  if (!deviceId) {
-    return <div className="p-4 text-center text-gray-400">Select a device to view graphs</div>
+  const getMetricData = (metric: string) => {
+    return aggregates
+      .filter(a => a.metric === metric)
+      .map(a => ({ time: new Date(a.windowStart).getTime(), value: a.avgValue }))
+      .sort((a, b) => a.time - b.time)
+  }
+
+  const renderChart = (metric: string, color: string) => {
+    const data = getMetricData(metric)
+    if (data.length === 0) return null
+
+    const maxVal = Math.max(...data.map(d => d.value))
+    const minVal = Math.min(...data.map(d => d.value))
+    const range = maxVal - minVal || 1
+
+    return (
+      <div key={metric} className="bg-slate-900 border border-slate-700 h-32">
+        <div className="bg-slate-800 px-2 py-1 text-xs font-semibold flex justify-between">
+          <span>{metrics.find(m => m.id === metric)?.name}</span>
+          <span style={{ color }}>{data[data.length - 1]?.value.toFixed(2)}</span>
+        </div>
+        <div className="relative h-24 p-2">
+          <svg className="w-full h-full">
+            <polyline
+              fill="none"
+              stroke={color}
+              strokeWidth="2"
+              points={data.map((d, i) => {
+                const x = (i / (data.length - 1)) * 100
+                const y = 100 - ((d.value - minVal) / range) * 100
+                return `${x}%,${y}%`
+              }).join(' ')}
+            />
+          </svg>
+        </div>
+      </div>
+    )
+  }
+
+  if (!sessionId) {
+    return <div className="h-full flex items-center justify-center text-slate-500">Start a session to view graphs</div>
   }
 
   return (
-    <div className="flex h-full bg-gray-900">
-      <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
-        <div className="text-sm font-bold mb-4">Select Metrics</div>
-        {availableMetrics.map(metric => (
-          <div key={metric.id} className="mb-2">
-            <label className="flex items-center cursor-pointer hover:bg-gray-700 p-2 rounded">
-              <input
-                type="checkbox"
-                checked={selectedMetrics.includes(metric.id)}
-                onChange={() => toggleMetric(metric.id)}
-                className="mr-2"
-              />
-              <span className="text-sm">{metric.name}</span>
-            </label>
+    <div className="h-full flex">
+      <div className="w-64 bg-slate-800 border-r border-slate-700 overflow-auto text-xs">
+        <div className="p-2 space-y-1">
+          <div className="font-semibold mb-2">Select Metrics</div>
+          <div className="pl-2">
+            <div className="font-semibold text-slate-400">Qualcomm</div>
+            <div className="pl-2">
+              <div className="font-semibold text-slate-400">5GNR-Q</div>
+              <div className="pl-2">
+                <div className="font-semibold text-slate-400">PCell</div>
+                <div className="pl-2">
+                  <div className="font-semibold text-slate-400">Serving Cell</div>
+                  <div className="pl-2 space-y-1">
+                    {metrics.map(m => (
+                      <label key={m.id} className="flex items-center gap-1 cursor-pointer hover:bg-slate-700 px-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedMetrics.includes(m.id)}
+                          onChange={() => toggleMetric(m.id)}
+                        />
+                        <span>{m.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        ))}
+        </div>
+        <div className="p-2 border-t border-slate-700 flex gap-2">
+          <button className="flex-1 px-2 py-1 bg-blue-600 rounded text-xs">Add/Edit</button>
+          <button className="flex-1 px-2 py-1 bg-slate-700 rounded text-xs">Delete</button>
+        </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-y-auto">
-        {selectedMetrics.map(metricId => {
-          const metric = availableMetrics.find(m => m.id === metricId)
-          if (!metric) return null
-
-          return (
-            <div key={metricId} className="mb-6 bg-black p-4 rounded">
-              <div className="text-sm font-bold mb-2">{metric.name}</div>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="time" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
-                    labelStyle={{ color: '#9ca3af' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={metricId}
-                    stroke={metric.color}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )
+      <div className="flex-1 overflow-auto p-2 space-y-2">
+        {selectedMetrics.map(metric => {
+          const m = metrics.find(x => x.id === metric)
+          return m ? renderChart(metric, m.color) : null
         })}
       </div>
     </div>

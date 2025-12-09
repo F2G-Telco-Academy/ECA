@@ -52,6 +52,7 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
     onDeviceSelect(newSelected)
   }
 
+  const [search, setSearch] = useState('')
   const kpiTree = {
     'Message': [
       'AirPcap Message',
@@ -173,6 +174,7 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
             <input
               type="text"
               placeholder="Search Keyword"
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
             />
           </div>
@@ -193,10 +195,10 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
               </div>
               {expandedSections[category.toLowerCase().replace(/\s+/g, '')] && (
                 <div className="bg-white">
-                  {items.map((item) => (
+                  {items.filter(i => i.toLowerCase().includes(search.toLowerCase())).map((item) => (
                     <div
                       key={item}
-                      onClick={() => onViewSelect(item)}
+                      onClick={() => { onViewSelect(item); onKpiSelect(item); }}
                       className="px-6 py-1.5 hover:bg-blue-50 cursor-pointer text-xs"
                     >
                       {item}

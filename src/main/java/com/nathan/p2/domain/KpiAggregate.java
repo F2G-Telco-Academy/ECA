@@ -18,6 +18,7 @@ public class KpiAggregate {
     @Id
     private Long id;
     private Long sessionId;
+    private LocalDateTime timestamp;
     private String metric;
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
@@ -29,4 +30,28 @@ public class KpiAggregate {
     private Double longitude;
     private String cellId;
     private Integer pci;
+    
+    // LTE/5G NR KPIs
+    private Double rsrp;
+    private Double rsrq;
+    private Double sinr;
+    private Double rssi;
+    private Integer cqi;
+    private Double dlThroughput;
+    private Double ulThroughput;
+    
+    // WCDMA KPIs
+    private Double rscp;
+    private Double ecno;
+    
+    // GSM KPIs
+    private Double rxlev;
+    private Double rxqual;
+    
+    // Additional fields
+    private Integer earfcn;
+    private Integer band;
+    private String duplexMode;
+    private Integer servingTxBeamId;
+    private Integer scs;
 }

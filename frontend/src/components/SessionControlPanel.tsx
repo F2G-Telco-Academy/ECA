@@ -103,7 +103,7 @@ export default function SessionControlPanel({
                 Starting...
               </span>
             ) : (
-              '▶ Start Capture'
+              'Start Capture'
             )}
           </button>
 

@@ -69,7 +69,7 @@ export default function EnhancedTerminal({ sessionId }: { sessionId: string | nu
     term.writeln('')
     term.writeln(`\x1b[1;36mConnecting to session ${sessionId}...\x1b[0m`)
 
-    const eventSource = new EventSource(`http://localhost:8080/api/logs/sessions/${sessionId}/stream`)
+    const eventSource = new EventSource(`http://localhost:8080/api/sessions/${sessionId}/logs`)
     
     eventSource.onmessage = (event) => {
       const line = event.data

@@ -20,6 +20,7 @@ import java.util.List;
 public class DeviceDetectorService {
     
     private final ToolsConfig toolsConfig;
+    private final AdbAutoInstallerService adbInstaller;
 
     public Flux<DeviceEvent> detectDevices() {
         return Flux.interval(toolsConfig.getDevice().getDetectionInterval())

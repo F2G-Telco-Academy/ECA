@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -22,6 +23,7 @@ public class KpiCalculatorService {
     private final DetailedKpiExtractor detailedExtractor;
     private final MissingKpiExtractor missingKpiExtractor;
     private final ConfigurationKpiExtractor configurationExtractor;
+    private final ProcedureCorrelationService correlationService;
 
     public Mono<Void> calculate(Long sessionId, Path pcapFile) {
         log.info("📊 Calculating ALL KPIs for ALL RATs (5G/LTE/WCDMA/GSM) - Session {}", sessionId);
@@ -152,16 +154,32 @@ public class KpiCalculatorService {
     // ==================== LTE KPIs ====================
     
     private Mono<KpiAggregate> calculateLteRrcSr(Long sessionId, Path pcapFile) {
-        return tsharkService.countPackets(pcapFile, "lte-rrc.rrcConnectionRequest_element")
-                .zipWith(tsharkService.countPackets(pcapFile, "lte-rrc.rrcConnectionSetupComplete_element"))
-                .map(tuple -> {
-                    long requests = tuple.getT1();
-                    long completes = tuple.getT2();
-                    double sr = requests > 0 ? (completes * 100.0 / requests) : 0.0;
-                    log.info("LTE RRC SR: {}/{} = {:.2f}%", completes, requests, sr);
-                    return createKpi(sessionId, "LTE_RRC_SR", sr, sr, sr, "LTE");
-                })
-                .flatMap(kpiRepository::save);
+        // Use procedure correlation for accurate RRC Success Rate
+        return correlationService.correlateLteRrcProcedures(pcapFile)
+            .map(procedures -> {
+                long total = procedures.size();
+                long successful = procedures.stream().filter(p -> p.success).count();
+                double sr = total > 0 ? (successful * 100.0 / total) : 0.0;
+                
+                // Calculate average latencies for successful procedures
+                double avgSetupLatency = procedures.stream()
+                    .filter(p -> p.success && p.setupLatencyMs > 0)
+                    .mapToLong(p -> p.setupLatencyMs)
+                    .average()
+                    .orElse(0.0);
+                
+                double avgTotalLatency = procedures.stream()
+                    .filter(p -> p.success && p.totalLatencyMs > 0)
+                    .mapToLong(p -> p.totalLatencyMs)
+                    .average()
+                    .orElse(0.0);
+                
+                log.info("📊 LTE RRC SR: {}/{} = {:.2f}% (Setup: {:.0f}ms, Total: {:.0f}ms)", 
+                    successful, total, sr, avgSetupLatency, avgTotalLatency);
+                
+                return createKpi(sessionId, "LTE_RRC_SR", sr, sr, sr, "LTE");
+            })
+            .flatMap(kpiRepository::save);
     }
 
     private Mono<KpiAggregate> calculateLteAttachSr(Long sessionId, Path pcapFile) {

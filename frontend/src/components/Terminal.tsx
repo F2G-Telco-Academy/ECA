@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Terminal as XTerm } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
-import 'xterm/css/xterm.css'
+// xterm styles loaded globally or via CSS-in-JS
 
 interface TerminalProps {
   sessionId: string | null

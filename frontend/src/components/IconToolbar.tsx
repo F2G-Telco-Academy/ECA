@@ -1,21 +1,22 @@
-export default function IconToolbar() {
+interface Props {
+  onAction: (action: string) => void;
+}
+
+export default function IconToolbar({ onAction }: Props) {
   return (
-    <div className="bg-gray-100 border-b border-gray-400 flex items-center gap-1 px-2 py-1">
-      <button className="p-2 hover:bg-gray-300 rounded" title="New">📄</button>
-      <button className="p-2 hover:bg-gray-300 rounded" title="Open">📁</button>
-      <button className="p-2 hover:bg-gray-300 rounded" title="Save">💾</button>
-      <div className="w-px h-6 bg-gray-400 mx-1" />
-      <button className="p-2 hover:bg-gray-300 rounded" title="Statistics">📊</button>
-      <button className="p-2 hover:bg-gray-300 rounded" title="Settings">⚙️</button>
-      <button className="p-2 hover:bg-gray-300 rounded" title="Alerts">⚠️</button>
-      <button className="p-2 hover:bg-gray-300 rounded" title="Search">🔍</button>
-      <div className="w-px h-6 bg-gray-400 mx-1" />
-      <button className="p-2 hover:bg-gray-300 rounded" title="Device">📱</button>
-      <button className="p-2 hover:bg-gray-300 rounded bg-green-200" title="Start">▶️</button>
-      <button className="p-2 hover:bg-gray-300 rounded" title="Pause">⏸️</button>
-      <button className="p-2 hover:bg-gray-300 rounded bg-red-200" title="Stop">⏹️</button>
-      <div className="w-px h-6 bg-gray-400 mx-1" />
-      <button className="p-2 hover:bg-gray-300 rounded" title="Export">📤</button>
+    <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 border-b border-gray-800">
+      <button onClick={() => onAction('start')} className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 rounded">
+        Start
+      </button>
+      <button onClick={() => onAction('stop')} className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 rounded">
+        Stop
+      </button>
+      <button onClick={() => onAction('export')} className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 rounded">
+        Export
+      </button>
+      <button onClick={() => onAction('clear')} className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded">
+        Clear
+      </button>
     </div>
-  )
+  );
 }
