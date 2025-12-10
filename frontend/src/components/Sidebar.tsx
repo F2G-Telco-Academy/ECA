@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react'
 interface SidebarProps {
   selectedDevice: string | null
   onDeviceSelect: (deviceId: string) => void
+  onSelectCategory?: (category: string|null) => void
 }
 
-export default function Sidebar({ selectedDevice, onDeviceSelect }: SidebarProps) {
+export default function Sidebar({ selectedDevice, onDeviceSelect, onSelectCategory }: SidebarProps) {
   const [devices, setDevices] = useState<any[]>([])
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['rf-kpi']))
+  // Expand Device Manager and Messages by default to mirror the design
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['device-manager', 'messages']))
+  const [selectedCategory, setSelectedCategory] = useState<string|null>(null)
 
   useEffect(() => {
     fetch('/api/sessions')
@@ -26,85 +29,90 @@ export default function Sidebar({ selectedDevice, onDeviceSelect }: SidebarProps
     setExpandedSections(newExpanded)
   }
 
+  const handleCategorySelect = (cat: string|null) => {
+    setSelectedCategory(cat)
+    onSelectCategory?.(cat)
+  }
+
   return (
-    <div className="w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto">
+    <div className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto text-gray-800">
       <div className="p-2">
+        {/* Device Manager */}
         <div className="mb-4">
-          <div className="font-bold text-sm mb-2">Mobile</div>
-          {devices.map((device, idx) => (
-            <div
-              key={device.id}
-              onClick={() => onDeviceSelect(device.id)}
-              className={`pl-4 py-1 cursor-pointer hover:bg-gray-700 ${
-                selectedDevice === device.id ? 'bg-blue-600' : ''
-              }`}
-            >
-              Mobile {idx + 1} ({device.deviceModel || device.deviceId})
+          <div
+            className="font-bold text-sm mb-2 cursor-pointer flex items-center text-gray-700"
+            onClick={() => toggleSection('device-manager')}
+          >
+            <span className="mr-2">{expandedSections.has('device-manager') ? '▼' : '▶'}</span>
+            Device Manager
+          </div>
+          {expandedSections.has('device-manager') && (
+            <div className="pl-2">
+              {devices.map((device, idx) => (
+                <div
+                  key={device.id}
+                  onClick={() => onDeviceSelect(device.id)}
+                  className={`pl-4 py-1 rounded cursor-pointer hover:bg-gray-100 flex items-center gap-2 ${
+                    selectedDevice === device.id ? 'bg-blue-50 border border-blue-200' : ''
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Mobile {idx + 1}
+                </div>
+              ))}
+              {devices.length === 0 && (
+                <div className="pl-4 py-1 text-xs text-gray-400">No devices connected</div>
+              )}
             </div>
-          ))}
+          )}
         </div>
 
+        {/* Signaling Messages */}
+        <div className="mb-2">
+          <div
+            className={`cursor-pointer hover:bg-gray-100 py-1 px-2 rounded text-gray-700 ${selectedCategory===null?'bg-blue-50 border border-blue-200':''}`}
+            onClick={() => handleCategorySelect(null)}
+            title="Show all signaling messages"
+          >
+            📡 Signaling Messages
+          </div>
+        </div>
+
+        {/* KPIs */}
         <div className="mb-4">
-          <div className="font-bold text-sm mb-2">Supported KPIs</div>
-          
-          <div>
-            <div
-              onClick={() => toggleSection('rf-kpi')}
-              className="cursor-pointer hover:bg-gray-700 py-1 flex items-center"
-            >
-              <span className="mr-2">{expandedSections.has('rf-kpi') ? '▼' : '▶'}</span>
-              RF KPI
-            </div>
-            {expandedSections.has('rf-kpi') && (
-              <div className="pl-6 text-sm">
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">RF Measurement Summary Info</div>
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">5GNR Information</div>
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">LTE/eAir-Q</div>
-              </div>
-            )}
-          </div>
+          <div className="cursor-pointer hover:bg-gray-100 py-1 px-2 rounded text-gray-700">📊 KPIs</div>
+        </div>
 
-          <div>
-            <div
-              onClick={() => toggleSection('5gnr')}
-              className="cursor-pointer hover:bg-gray-700 py-1 flex items-center"
-            >
-              <span className="mr-2">{expandedSections.has('5gnr') ? '▼' : '▶'}</span>
-              5GNR
-            </div>
-            {expandedSections.has('5gnr') && (
-              <div className="pl-6 text-sm">
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">5GNR Information (MIB)</div>
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">5GNR UE Capability</div>
-              </div>
-            )}
+        {/* Messages group */}
+        <div className="mb-2">
+          <div
+            className="cursor-pointer py-1 flex items-center px-2 rounded hover:bg-gray-100 text-gray-700"
+            onClick={() => toggleSection('messages')}
+          >
+            <span className="mr-2">{expandedSections.has('messages') ? '▼' : '▶'}</span>
+            Messages
           </div>
-
-          <div>
-            <div
-              onClick={() => toggleSection('lte')}
-              className="cursor-pointer hover:bg-gray-700 py-1 flex items-center"
-            >
-              <span className="mr-2">{expandedSections.has('lte') ? '▼' : '▶'}</span>
-              LTE
+          {expandedSections.has('messages') && (
+            <div className="pl-6 text-sm">
+              {[
+                { key: 'rrc', label: 'RRC Connection' },
+                { key: 'mib', label: 'MIB Information' },
+                { key: 'sib', label: 'SIB Information' },
+                { key: 'nas5g', label: 'NAS 5G' },
+                { key: 'nas4g', label: 'NAS 4G' },
+                { key: 'nas3g', label: 'NAS 3G' },
+                { key: 'nas2g', label: 'NAS 2G' },
+              ].map(item => (
+                <div
+                  key={item.key}
+                  className={`py-1 hover:bg-gray-100 cursor-pointer rounded px-2 ${selectedCategory===item.key?'bg-blue-50 border border-blue-200':''}`}
+                  onClick={() => handleCategorySelect(item.key)}
+                >
+                  {item.label}
+                </div>
+              ))}
             </div>
-          </div>
-
-          <div>
-            <div
-              onClick={() => toggleSection('qualcomm')}
-              className="cursor-pointer hover:bg-gray-700 py-1 flex items-center"
-            >
-              <span className="mr-2">{expandedSections.has('qualcomm') ? '▼' : '▶'}</span>
-              Qualcomm
-            </div>
-            {expandedSections.has('qualcomm') && (
-              <div className="pl-6 text-sm">
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">Message</div>
-                <div className="py-1 hover:bg-gray-700 cursor-pointer">Common-Q</div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

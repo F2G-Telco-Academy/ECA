@@ -18,14 +18,18 @@ export default function StatusBar() {
   }, [])
 
   return (
-    <div className="h-6 bg-gray-800 border-t border-gray-700 flex items-center px-4 text-xs text-gray-400">
-      <div className="flex items-center gap-4">
+    <div className="h-7 bg-white border-t border-gray-200 flex items-center px-4 text-[11px] text-gray-600">
+      <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${status.backend === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
-          Backend: {status.backend}
+          <span>Backend: {status.backend}</span>
         </div>
-        <div>Device: {status.device}</div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-gray-300" />
+          <span>Device: {status.device}</span>
+        </div>
       </div>
+      <div className="ml-auto text-gray-500">Status OK</div>
     </div>
   )
 }

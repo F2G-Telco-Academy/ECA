@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 interface Props {
   currentPage?: string;
   onPageChange?: (page: string) => void;
@@ -7,22 +5,16 @@ interface Props {
 
 export default function TopBar({ currentPage, onPageChange }: Props = {}) {
   const tabs = [
-    { href: '/live', id: 'signaling', label: 'Live Messages' },
-    { href: '/logs', id: 'logs', label: 'Log Messages' },
-    { href: '/kpi', id: 'kpi', label: 'KPI' },
-    { href: '/5gnr', id: '5gnr', label: '5GNR Info' },
-    { href: '/visualize', id: 'visualize', label: 'Visualize' },
-    { href: '/analyze', id: 'analyze', label: 'Analyze' },
-    { href: '/convert', id: 'convert', label: 'Convert' },
-    { href: '/devices', id: 'devices', label: 'Devices' },
-    { href: '/settings', id: 'settings', label: 'Settings' },
-    { href: '/help', id: 'help', label: 'Help' },
+    { id: 'signaling', label: 'Live Signaling' },
+    { id: 'convert', label: 'Convert' },
+    { id: 'visualize', label: 'Visualize' },
+    { id: 'analyze', label: 'Analyze' },
   ]
 
   return (
-    <div className="border-b border-gray-800 bg-black">
+    <div className="border-b border-gray-200 bg-white text-gray-800">
       {/* Menu bar */}
-      <div className="px-4 py-1 text-[11px] text-gray-300 border-b border-gray-800 flex gap-6">
+      <div className="px-4 py-1 text-[11px] text-gray-600 border-b border-gray-200 flex gap-6">
         <span>File</span>
         <span>Setting</span>
         <span>Statistics/Status</span>
@@ -34,38 +26,43 @@ export default function TopBar({ currentPage, onPageChange }: Props = {}) {
       </div>
 
       {/* Toolbar */}
-      <div className="px-3 py-1 bg-gray-950 border-b border-gray-800 text-gray-300 text-xs flex items-center gap-2">
-        <button title="Save" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">
+      <div className="px-3 py-1 bg-gray-50 border-b border-gray-200 text-gray-700 text-xs flex items-center gap-2">
+        <button title="Save" className="px-2 py-1 hover:bg-gray-100 rounded border border-transparent hover:border-gray-300">
           💾
         </button>
-        <button title="Open" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">
+        <button title="Open" className="px-2 py-1 hover:bg-gray-100 rounded border border-transparent hover:border-gray-300">
           📂
         </button>
-        <button title="Settings" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">
+        <button title="Settings" className="px-2 py-1 hover:bg-gray-100 rounded border border-transparent hover:border-gray-300">
           ⚙️
         </button>
-        <span className="mx-1 w-px h-4 bg-gray-800" />
-        <button title="Warning" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">⚠️</button>
-        <button title="Info" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">ℹ️</button>
-        <button title="Search" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">🔍</button>
-        <span className="mx-1 w-px h-4 bg-gray-800" />
+        <span className="mx-1 w-px h-4 bg-gray-200" />
+        <button title="Warning" className="px-2 py-1 hover:bg-gray-100 rounded border border-transparent hover:border-gray-300">⚠️</button>
+        <button title="Info" className="px-2 py-1 hover:bg-gray-100 rounded border border-transparent hover:border-gray-300">ℹ️</button>
+        <button title="Search" className="px-2 py-1 hover:bg-gray-100 rounded border border-transparent hover:border-gray-300">🔍</button>
+        <span className="mx-1 w-px h-4 bg-gray-200" />
         <button title="Zoom -" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">➖</button>
         <button title="Zoom +" className="px-2 py-1 hover:bg-gray-900 rounded border border-transparent hover:border-gray-700">➕</button>
-        <span className="mx-1 w-px h-4 bg-gray-800" />
+        <span className="mx-1 w-px h-4 bg-gray-200" />
         <div className="ml-auto flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-gray-400">System Ready</span>
+          <span className="text-gray-600">System Ready</span>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs (no navigation, in-page switching) */}
       <div className="flex px-2 overflow-x-auto">
         {tabs.map(t => (
-          <Link key={t.id} href={t.href} className={`px-4 py-2 text-xs border-b-2 ${
-            currentPage === t.id ? 'border-white text-white bg-gray-900' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-950'
-          }`} onClick={() => onPageChange?.(t.id)}>
+          <button
+            key={t.id}
+            type="button"
+            className={`px-4 py-2 text-xs border-b-2 ${
+              currentPage === t.id ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}
+            onClick={() => onPageChange?.(t.id)}
+          >
             {t.label}
-          </Link>
+          </button>
         ))}
       </div>
     </div>

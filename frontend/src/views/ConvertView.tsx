@@ -1,9 +1,8 @@
+"use client"
 import { useState } from 'react'
-import TopBar from '@/components/TopBar'
-import Footer from '@/components/Footer'
 import { api } from '@/utils/api'
 
-export default function ConvertPage(){
+export default function ConvertView(){
   const [file, setFile] = useState<File|null>(null)
   const [converting, setConverting] = useState(false)
   const [result, setResult] = useState<any>(null)
@@ -11,23 +10,9 @@ export default function ConvertPage(){
   const [queue, setQueue] = useState<{name:string; size:number; type:string; status:string; progress:number}[]>([])
 
   const handleConvert = async () => {
-    if (!file) {
-      alert('Please select a file first')
-      return
-    }
-
-    setConverting(true)
-    setError(null)
-    setResult(null)
-    // add to visual queue immediately for parity with screenshot
-    setQueue(prev => [{
-      name: file.name,
-      size: file.size,
-      type: file.name.split('.').pop()?.toUpperCase() || 'LOG',
-      status: 'Converting',
-      progress: 15
-    }, ...prev])
-    
+    if (!file) { alert('Please select a file first'); return }
+    setConverting(true); setError(null); setResult(null)
+    setQueue(prev => [{ name: file.name, size: file.size, type: file.name.split('.').pop()?.toUpperCase() || 'LOG', status: 'Converting', progress: 15 }, ...prev])
     try {
       const res = await api.convertOfflineLog(file)
       setResult(res)
@@ -36,15 +21,12 @@ export default function ConvertPage(){
     } catch (err: any) {
       setError(err.message || 'Conversion failed')
       setQueue(prev => prev.map(it => it.name===file?.name ? { ...it, status: 'Failed', progress: 0 } : it))
-      alert('Conversion failed: ' + err.message)
-    } finally {
-      setConverting(false)
-    }
+      alert('Conversion failed: ' + (err?.message || 'Unknown error'))
+    } finally { setConverting(false) }
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-800">
-      <TopBar currentPage="convert" />
+    <div className="flex flex-col h-full bg-white text-gray-800">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <h1 className="text-lg font-semibold">Convert</h1>
@@ -64,20 +46,12 @@ export default function ConvertPage(){
       </div>
 
       {/* Body */}
-      <div className="p-6 flex-1 flex flex-col gap-4">
+      <div className="p-6 flex-1 flex flex-col gap-4 overflow-auto">
         <div className="border border-gray-200 rounded bg-white p-4">
           <div className="text-xs text-gray-500 mb-2">Select Log File</div>
-          <input
-            id="fileInput"
-            type="file"
-            accept=".qmdl2,.sdm,.lpd"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="text-sm"
-          />
+          <input id="fileInput" type="file" accept=".qmdl2,.sdm,.lpd" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm" />
           {file && (
-            <div className="mt-2 text-xs text-gray-600">
-              Selected: <span className="font-mono">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(2)} MB)
-            </div>
+            <div className="mt-2 text-xs text-gray-600">Selected: <span className="font-mono">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(2)} MB)</div>
           )}
         </div>
 
@@ -96,9 +70,7 @@ export default function ConvertPage(){
               </thead>
               <tbody>
                 {queue.length===0 && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center text-gray-400">No items in queue</td>
-                  </tr>
+                  <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-400">No items in queue</td></tr>
                 )}
                 {queue.map((q)=> (
                   <tr key={q.name} className="border-b border-gray-100">
@@ -120,16 +92,13 @@ export default function ConvertPage(){
           </div>
         </div>
 
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">Error: {error}</div>
-        )}
+        {error && (<div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">Error: {error}</div>)}
         {result && (
           <div className="p-3 bg-green-50 border border-green-200 rounded text-xs text-green-700">
             Conversion Successful — PCAP: <span className="font-mono">{result.pcapPath}</span>
           </div>
         )}
       </div>
-      <Footer />
     </div>
   )
 }

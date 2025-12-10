@@ -6,7 +6,7 @@ import { api } from '@/utils/api'
 const SignalingMessageViewer = dynamic(() => import('@/components/SignalingMessageViewer'), { ssr: false })
 const EnhancedTerminal = dynamic(() => import('@/components/EnhancedTerminal'), { ssr: false })
 
-export default function Home() {
+export default function LegacyHome() {
   const [currentContext, setCurrentContext] = useState(deviceContext.getCurrentContext())
   const [devices, setDevices] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')

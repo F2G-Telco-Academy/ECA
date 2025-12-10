@@ -3,6 +3,7 @@ import XCALSidebar from '@/components/XCALSidebar'
 import XCALRFSummary from '@/components/XCALRFSummary'
 import XCALSignalingViewer from '@/components/XCALSignalingViewer'
 import XCALGraphView from '@/components/XCALGraphView'
+import UserDefinedTable from '@/components/UserDefinedTable'
 import MultiDeviceGrid from '@/components/MultiDeviceGrid'
 import MapView from '@/components/MapView'
 import SessionControlPanel from '@/components/SessionControlPanel'
@@ -51,7 +52,9 @@ export default function XCALInterface() {
       'RF Measurement Summary Info': 'rf-summary',
       'Signaling Message': 'signaling',
       'User Defined Graph': 'graphs',
-      'Map View': 'map'
+      'User Defined Table': 'user-table',
+      'Map View': 'map',
+      'Session Control': 'session-control'
     }
 
     const mappedView = viewMap[view] || 'rf-summary'
@@ -91,6 +94,8 @@ export default function XCALInterface() {
         return <XCALSignalingViewer sessionId={sessionId} />
       case 'graphs':
         return <XCALGraphView sessionId={sessionId} />
+      case 'user-table':
+        return <UserDefinedTable sessionId={sessionId} />
       case 'map':
         return <MapView sessionId={sessionId} />
       case 'session-control':

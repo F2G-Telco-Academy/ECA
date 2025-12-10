@@ -1,10 +1,9 @@
+"use client"
 import { useEffect, useState } from 'react'
-import TopBar from '@/components/TopBar'
-import Footer from '@/components/Footer'
 import DeviceSelectionBar from '@/components/DeviceSelectionBar'
 import { api } from '@/utils/api'
 
-export default function VisualizePage(){
+export default function VisualizeView(){
   const [deviceId, setDeviceId] = useState<string|null>(null)
   const [sessionId, setSessionId] = useState<string|number|null>(null)
   const [mapData, setMapData] = useState<any>(null)
@@ -34,8 +33,7 @@ export default function VisualizePage(){
   }, [sessionId])
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-800">
-      <TopBar currentPage="visualize" />
+    <div className="flex flex-col h-full bg-white text-gray-800">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -65,7 +63,7 @@ export default function VisualizePage(){
       </div>
 
       {/* Body grid */}
-      <div className="p-6 grid grid-cols-2 gap-4">
+      <div className="p-6 grid grid-cols-2 gap-4 overflow-auto">
         {/* Map Panel */}
         <div className="border border-gray-200 rounded bg-white">
           <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-xs text-gray-600 flex items-center justify-between">
@@ -128,7 +126,6 @@ export default function VisualizePage(){
           ))}
         </div>
       </div>
-      <Footer />
     </div>
   )
 }

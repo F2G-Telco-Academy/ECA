@@ -21,7 +21,8 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
     'rfKpi': true,
     'qualcomm': false,
     'xcalSmart': false,
-    'autocallKpi': false
+    'autocallKpi': false,
+    'views': true
   })
 
   useEffect(() => {
@@ -54,6 +55,14 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
 
   const [search, setSearch] = useState('')
   const kpiTree = {
+    'Views': [
+      'RF Measurement Summary Info',
+      'Signaling Message',
+      'User Defined Graph',
+      'User Defined Table',
+      'Map View',
+      'Session Control'
+    ],
     'Message': [
       'AirPcap Message',
       'HTTP / SIP Message',
