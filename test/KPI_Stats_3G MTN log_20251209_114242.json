@@ -1,0 +1,10 @@
+{
+  "lte_attach_req": 0,
+  "lte_attach_acc": 0,
+  "lte_attach_rej": 0,
+  "lte_rrc_req": 0,
+  "lte_rrc_setup": 0,
+  "lte_meas_report": 0,
+  "wcdma_rrc_req": 2,
+  "wcdma_rrc_setup": 0
+}

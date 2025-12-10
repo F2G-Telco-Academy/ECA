@@ -1,38 +1,106 @@
-# Dependencies
+# ===== DEPENDENCIES =====
+# Node.js
 node_modules/
 frontend/node_modules/
+frontend/package-lock.json
+frontend/yarn.lock
+frontend/pnpm-lock.yaml
 
-# Build outputs
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Maven
 target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ===== BUILD OUTPUTS =====
 frontend/.next/
 frontend/out/
 frontend/dist/
+frontend/build/
+frontend/tsconfig.tsbuildinfo
+*.class
+*.war
+*.jar
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
-# IDE
+# ===== IDE & EDITORS =====
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 *.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# ===== OS FILES =====
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Logs
+# ===== LOGS =====
 *.log
+logs/
 backend.log
+backend-*.log
 frontend.log
+frontend-*.log
 tauri.log
+scat.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment
+# ===== ENVIRONMENT & SECRETS =====
+.env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*.local
 
-# Session data
+# ===== SESSION DATA & DATABASES =====
 data/sessions/
 data/*.mv.db
 data/*.trace.db
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
 
-# Test files and captures
+# ===== CAPTURE FILES (Heavy) =====
 *.pcap
 *.pcapng
 *.qmdl
@@ -41,14 +109,53 @@ data/*.trace.db
 *.dlf
 *.hdf
 *.isf
+*.cap
+*.dmp
 
-# Test results
+# But keep test samples in test/ folder
+!test/*.pcap
+!test/*.qmdl
+!test/*.qmdl2
+!test/*.sdm
+
+# ===== STATISTICS & RESULTS =====
+statistics/
 test-results-*/
 test_output.log
 comprehensive_test_results.log
+clustering_results/
+*.csv
+*.json.bak
 
-# Process IDs
+# But keep config JSON files
+!**/config/*.json
+!package.json
+!tsconfig.json
+
+# ===== PROCESS & RUNTIME =====
 *.pid
+.cache/
+
+# ===== REFERENCE CODEBASES (Heavy) =====
+backend-scat-old-codebase/
+mobileinsight-core-master/
+termshark-master/
+LTE-KPI-Kmeans-Clustering-main/
+
+# ===== LARGE BINARIES & TOOLS =====
+tools/adb/**
+tools/python/**
+tools/tshark/**
+xcal/
+
+# ===== TEMPORARY FILES =====
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*~.nib
 backend.pid
 tauri.pid
 

@@ -63,9 +63,11 @@ CREATE TABLE IF NOT EXISTS records (
     direction VARCHAR(2) NOT NULL,
     message_type VARCHAR(100),
     layer VARCHAR(10),
+    rat VARCHAR(20),
     frame_number INTEGER,
     hex_data TEXT,
     decoded_data TEXT,
+    payload_json TEXT,
     length INTEGER
 );
 

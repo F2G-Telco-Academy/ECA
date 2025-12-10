@@ -8,4 +8,7 @@ import reactor.core.publisher.Flux;
 public interface GpsTraceRepository extends ReactiveCrudRepository<GpsTrace, Long> {
     @Query("SELECT * FROM gps_traces WHERE session_id = :sessionId ORDER BY timestamp ASC")
     Flux<GpsTrace> findBySessionIdOrderByTimestampAsc(Long sessionId);
+    
+    @Query("SELECT * FROM gps_traces WHERE session_id = :sessionId")
+    Flux<GpsTrace> findBySessionId(Long sessionId);
 }

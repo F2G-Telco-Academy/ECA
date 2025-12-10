@@ -112,27 +112,6 @@ public class ComprehensivePcapExtractorService {
             data.put("timestamp", timestamp.get(0).asDouble());
         }
         
-        // RSRP - convert from index to dBm: -140 + index
-        JsonNode rsrpNode = layers.path("lte-rrc.rsrpResult");
-        if (rsrpNode.isArray() && rsrpNode.size() > 0) {
-            int rsrpIndex = rsrpNode.get(0).asInt();
-            double rsrp = -140 + rsrpIndex;
-            data.put("rsrp", rsrp);
-        }
-        
-        // RSRQ - convert from index to dB: -19.5 + (index * 0.5)
-        JsonNode rsrqNode = layers.path("lte-rrc.rsrqResult");
-        if (rsrqNode.isArray() && rsrqNode.size() > 0) {
-            int rsrqIndex = rsrqNode.get(0).asInt();
-            double rsrq = -19.5 + (rsrqIndex * 0.5);
-            data.put("rsrq", rsrq);
-        }
-        
-        // Default values for missing fields
-        data.putIfAbsent("sinr", 10.0 + Math.random() * 10);
-        data.putIfAbsent("cqi", 7.0 + Math.random() * 8);
-        data.putIfAbsent("rssi", -70.0 + Math.random() * 20);
-        
         return data;
     }
 
@@ -158,8 +137,6 @@ public class ComprehensivePcapExtractorService {
                 if (point.containsKey("rsrq")) rsrqValues.add(((Number) point.get("rsrq")).doubleValue());
                 if (point.containsKey("sinr")) sinrValues.add(((Number) point.get("sinr")).doubleValue());
             }
-            
-            summary.put("total_measurements", dataset.size());
             
             if (!rsrpValues.isEmpty()) {
                 Map<String, Double> rsrpStats = new HashMap<>();

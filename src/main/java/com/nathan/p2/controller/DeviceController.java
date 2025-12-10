@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 public class DeviceController {
     
     private final DeviceDetectorService deviceDetectorService;
+    private final com.nathan.p2.service.DiagnosticModeChecker diagnosticModeChecker;
 
     @Operation(
         summary = "List all connected devices",
@@ -76,5 +77,34 @@ public class DeviceController {
         log.debug("Fetching device: {}", deviceId);
         return deviceDetectorService.getConnectedDevices()
                 .filter(device -> device.getDeviceId().equals(deviceId));
+    }
+    
+    @Operation(
+        summary = "Check if device is in diagnostic mode",
+        description = "Verifies if the device has diagnostic mode enabled (required for SCAT capture). Returns USB address if in diagnostic mode, or instructions if not."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Diagnostic mode check completed",
+            content = @Content(mediaType = "application/json")
+        )
+    })
+    @GetMapping("/{deviceId}/diagnostic")
+    public reactor.core.publisher.Mono<java.util.Map<String, Object>> checkDiagnosticMode(
+        @Parameter(description = "Device serial number or ID", required = true)
+        @PathVariable String deviceId
+    ) {
+        log.debug("Checking diagnostic mode for device: {}", deviceId);
+        return reactor.core.publisher.Mono.fromCallable(() -> {
+            var result = diagnosticModeChecker.checkDiagnosticMode(deviceId);
+            return java.util.Map.of(
+                "deviceId", deviceId,
+                "inDiagnosticMode", result.isInDiagnosticMode(),
+                "usbAddress", result.getUsbAddress() != null ? result.getUsbAddress() : "N/A",
+                "message", result.getMessage(),
+                "instructions", result.getInstructions()
+            );
+        });
     }
 }

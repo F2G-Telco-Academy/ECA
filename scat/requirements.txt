@@ -1,5 +1,7 @@
 # Extended Cellular Analyzer Dependencies
 signalcat[fastcrc]>=1.0.0
 pyusb>=1.2.1
+pyserial>=3.5
 construct>=2.10.68
 folium>=0.15.1
+requests>=2.31.0

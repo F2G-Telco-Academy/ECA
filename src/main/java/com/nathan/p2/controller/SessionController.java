@@ -1,8 +1,10 @@
 package com.nathan.p2.controller;
 
 import com.nathan.p2.domain.Session;
+import com.nathan.p2.dto.SignalingMessageDto;
 import com.nathan.p2.service.CaptureOrchestrationService;
 import com.nathan.p2.service.SessionService;
+import com.nathan.p2.service.SignalingMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,12 +23,12 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/api/sessions")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Session Management", description = "APIs for managing capture sessions. Sessions represent individual data capture operations from connected devices, including start/stop control, status monitoring, and log streaming.")
 public class SessionController {
     
     private final SessionService sessionService;
     private final CaptureOrchestrationService captureService;
+    private final SignalingMessageService signalingService;
 
     @Operation(
         summary = "Start a new capture session",
@@ -57,8 +59,23 @@ public class SessionController {
         @Parameter(description = "Device ID from ADB (e.g., 'emulator-5554' or device serial number)", required = true, example = "RF8N41JBXXX")
         @RequestParam String deviceId
     ) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return Mono.error(new IllegalArgumentException("Device ID cannot be empty"));
+        }
+        if (deviceId.length() > 255) {
+            return Mono.error(new IllegalArgumentException("Device ID too long"));
+        }
         log.info("Starting capture session for device: {}", deviceId);
         return captureService.startCapture(deviceId);
+    }
+
+    @PostMapping("/from-pcap")
+    public Mono<Session> createSessionFromPcap(
+        @RequestParam String pcapPath,
+        @RequestParam(defaultValue = "offline") String deviceId
+    ) {
+        log.info("Creating offline session from PCAP: {}", pcapPath);
+        return sessionService.createOfflineSession(deviceId, pcapPath);
     }
 
     @Operation(
@@ -155,6 +172,9 @@ public class SessionController {
         @Parameter(description = "Maximum number of sessions to return", example = "10")
         @RequestParam(defaultValue = "10") int limit
     ) {
+        if (limit < 1 || limit > 100) {
+            return Flux.error(new IllegalArgumentException("Limit must be between 1 and 100"));
+        }
         return sessionService.getRecentSessions(limit);
     }
 
@@ -186,6 +206,45 @@ public class SessionController {
                 .onErrorResume(error -> {
                     log.error("Error streaming logs for session {}", id, error);
                     return Flux.just("Error: " + error.getMessage());
+                });
+    }
+
+    @Operation(
+        summary = "Stream signaling messages in real-time",
+        description = "Establishes a Server-Sent Events (SSE) stream that provides parsed signaling messages (RRC, NAS, etc.) from the capture. Messages are decoded from GSMTAP packets."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Signaling stream established",
+            content = @Content(
+                mediaType = "text/event-stream",
+                schema = @Schema(implementation = SignalingMessageDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Session not found",
+            content = @Content(mediaType = "application/json")
+        )
+    })
+    @GetMapping(value = "/{id}/signaling", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamSignaling(
+        @Parameter(description = "Session ID", required = true, example = "1")
+        @PathVariable Long id
+    ) {
+        return signalingService.streamSignaling(id)
+                .map(msg -> {
+                    try {
+                        return "data: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(msg) + "\n\n";
+                    } catch (Exception e) {
+                        log.error("Error serializing signaling message", e);
+                        return "data: {\"error\":\"Serialization failed\"}\n\n";
+                    }
+                })
+                .onErrorResume(error -> {
+                    log.error("Error streaming signaling for session {}", id, error);
+                    return Flux.just("data: {\"error\":\"" + error.getMessage() + "\"}\n\n");
                 });
     }
 }

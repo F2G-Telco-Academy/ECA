@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { deviceContext } from '@/utils/deviceContext'
+import { api } from '@/utils/api'
 
 const SignalingMessageViewer = dynamic(() => import('@/components/SignalingMessageViewer'), { ssr: false })
 const EnhancedTerminal = dynamic(() => import('@/components/EnhancedTerminal'), { ssr: false })
 
 export default function Home() {
-  const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [currentContext, setCurrentContext] = useState(deviceContext.getCurrentContext())
   const [devices, setDevices] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('devices')
@@ -19,21 +20,68 @@ export default function Home() {
   const [expandedKpis, setExpandedKpis] = useState<{[key: string]: boolean}>({})
 
   const [activePanelTab, setActivePanelTab] = useState('signaling')
+  const [isCapturing, setIsCapturing] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('')
 
   useEffect(() => {
+    const unsubscribe = deviceContext.subscribe(setCurrentContext)
+    
     const fetchDevices = async () => {
       try {
-        const res = await fetch('/api/devices')
-        const data = await res.json()
+        const data = await api.getDevices()
         setDevices(data)
+        if (data.length > 0 && !currentContext) {
+          deviceContext.setDevice(data[0].deviceId, data[0].model, data[0].manufacturer)
+        }
       } catch (err) {
         console.error('Failed to fetch devices:', err)
+        setStatusMessage('Backend not connected')
       }
     }
     fetchDevices()
     const interval = setInterval(fetchDevices, 3000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      unsubscribe()
+    }
   }, [])
+
+  const handleStartCapture = async () => {
+    if (!currentContext) {
+      alert('Please select a device first')
+      return
+    }
+    
+    try {
+      setStatusMessage('Starting capture...')
+      const session = await api.startSession(currentContext.deviceId)
+      deviceContext.startSession(currentContext.deviceId, session.id)
+      setIsCapturing(true)
+      setStatusMessage(`✓ Capturing - Session ${session.id}`)
+      setActivePanelTab('terminal')
+    } catch (err: any) {
+      console.error('Failed to start capture:', err)
+      alert('Failed to start capture: ' + err.message)
+      setStatusMessage('✗ Capture failed')
+    }
+  }
+
+  const handleStopCapture = async () => {
+    if (!currentContext?.sessionId) return
+    
+    try {
+      setStatusMessage('Stopping capture...')
+      await api.stopSession(currentContext.sessionId)
+      deviceContext.stopSession(currentContext.deviceId)
+      setIsCapturing(false)
+      setStatusMessage(`✓ Stopped - Session ${currentContext.sessionId}`)
+      setActivePanelTab('signaling')
+    } catch (err: any) {
+      console.error('Failed to stop capture:', err)
+      alert('Failed to stop capture: ' + err.message)
+      setStatusMessage('✗ Stop failed')
+    }
+  }
 
   const togglePanel = (panel: string) => {
     setOpenPanels(prev => ({ ...prev, [panel]: !prev[panel] }))
@@ -47,34 +95,71 @@ export default function Home() {
     <div className="h-screen flex flex-col bg-slate-900 text-white">
       {/* Top Menu Bar */}
       <div className="h-8 bg-slate-800 border-b border-slate-700 flex items-center px-2 text-xs">
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">File</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Setting</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Statistics/Status</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">User Defined</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Call Statistics</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Mobile Reset</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Window</button>
-        <button className="px-3 py-1 hover:bg-slate-700 rounded">Help</button>
+        <button onClick={() => window.open('/convert', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">File</button>
+        <button onClick={() => window.open('/settings', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">Setting</button>
+        <button onClick={() => window.open('/kpi', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">Statistics/Status</button>
+        <button onClick={() => window.open('/visualize', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">User Defined</button>
+        <button onClick={() => window.open('/analysis', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">Call Statistics</button>
+        <button onClick={() => alert('Mobile Reset - Feature coming soon')} className="px-3 py-1 hover:bg-slate-700 rounded">Mobile Reset</button>
+        <button onClick={() => window.open('/devices', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">Window</button>
+        <button onClick={() => window.open('/help', '_blank')} className="px-3 py-1 hover:bg-slate-700 rounded">Help</button>
       </div>
 
       {/* Toolbar */}
       <div className="h-12 bg-slate-800 border-b border-slate-700 flex items-center px-3 gap-2">
-        <button className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded text-sm font-medium">
-          Start
+        <button 
+          onClick={handleStartCapture}
+          disabled={isCapturing || !currentContext}
+          className={`px-4 py-1.5 rounded text-sm font-medium ${
+            isCapturing || !currentContext
+              ? 'bg-gray-600 cursor-not-allowed'
+              : 'bg-green-600 hover:bg-green-700'
+          }`}
+        >
+          Start Capture
         </button>
-        <button className="px-4 py-1.5 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium">
+        <button 
+          disabled
+          className="px-4 py-1.5 bg-gray-600 cursor-not-allowed rounded text-sm font-medium"
+        >
           Pause
         </button>
-        <button className="px-4 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm font-medium">
-          Stop
+        <button 
+          onClick={handleStopCapture}
+          disabled={!isCapturing}
+          className={`px-4 py-1.5 rounded text-sm font-medium ${
+            !isCapturing
+              ? 'bg-gray-600 cursor-not-allowed'
+              : 'bg-red-600 hover:bg-red-700'
+          }`}
+        >
+          Stop Capture
         </button>
         <div className="w-px h-8 bg-slate-600 mx-2" />
-        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">Export</button>
-        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">Settings</button>
-        <button className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm">Search</button>
+        <button 
+          onClick={() => window.open('/kpi', '_blank')}
+          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm"
+        >
+          View KPIs
+        </button>
+        <button 
+          onClick={() => window.open('/logs', '_blank')}
+          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm"
+        >
+          View Logs
+        </button>
+        <button 
+          onClick={() => window.open('/visualize', '_blank')}
+          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm"
+        >
+          Visualize
+        </button>
         <div className="flex-1" />
-        <div className="text-sm text-slate-400">
-          {devices.length > 0 ? `${devices.length} device(s) connected` : 'No devices'}
+        <div className="text-sm">
+          {statusMessage && <span className="text-yellow-400 mr-4">{statusMessage}</span>}
+          <span className={devices.length > 0 ? 'text-green-400' : 'text-red-400'}>
+            {devices.length > 0 ? `${devices.length} device(s) connected` : 'No devices - Check backend'}
+          </span>
         </div>
       </div>
 
@@ -125,15 +210,15 @@ export default function Home() {
                   ) : (
                     devices.map((device, idx) => (
                       <button
-                        key={device.id}
-                        onClick={() => setSelectedDevice(device.id)}
+                        key={device.deviceId}
+                        onClick={() => deviceContext.setDevice(device.deviceId, device.model, device.manufacturer)}
                         className={`w-full text-left px-2 py-1.5 rounded ${
-                          selectedDevice === device.id
+                          currentContext?.deviceId === device.deviceId
                             ? 'bg-blue-600 text-white'
                             : 'hover:bg-slate-700 text-slate-300'
                         }`}
                       >
-                        Mobile {idx + 1} ({device.id})
+                        Mobile {idx + 1} ({device.deviceId})
                       </button>
                     ))
                   )}
@@ -407,18 +492,30 @@ export default function Home() {
 
           {/* Bottom Buttons */}
           <div className="border-t border-slate-700 p-2 flex gap-2">
-            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+            <button 
+              onClick={() => alert('Airplane mode toggle - Feature coming soon')}
+              className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+            >
               Airplane
             </button>
-            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+            <button 
+              onClick={() => alert('Mobile reset - Feature coming soon')}
+              className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+            >
               Mobile Reset
             </button>
           </div>
           <div className="border-t border-slate-700 p-2 flex gap-2">
-            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+            <button 
+              onClick={() => setOpenPanels({mobile: true, scanner: true, gps: true, kpis: true})}
+              className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+            >
               Select All
             </button>
-            <button className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">
+            <button 
+              onClick={() => setOpenPanels({mobile: false, scanner: false, gps: false, kpis: false})}
+              className="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+            >
               Unselect All
             </button>
           </div>
@@ -503,37 +600,70 @@ export default function Home() {
           {/* Panel Content */}
           <div className="flex-1 overflow-hidden">
             {activePanelTab === 'signaling' && (
-              <SignalingMessageViewer sessionId={sessionId} />
+              <SignalingMessageViewer sessionId={currentContext?.sessionId?.toString() || null} />
             )}
             {activePanelTab === 'rf' && (
               <div className="h-full p-4 overflow-auto">
-                <div className="text-center text-slate-500">
-                  {!selectedDevice ? 'Select a device to view RF measurements' : 'RF Measurement data will appear here'}
-                </div>
+                {currentContext?.sessionId ? (
+                  <iframe 
+                    src={`/kpi?session=${currentContext.sessionId}`} 
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <div className="text-center text-slate-500">Start a capture to view RF measurements</div>
+                )}
               </div>
             )}
             {activePanelTab === '5gnr-mib' && (
               <div className="h-full p-4 overflow-auto">
-                <div className="text-center text-slate-500">5GNR MIB configuration data will appear here</div>
+                {sessionId ? (
+                  <iframe 
+                    src={`/5gnr?session=${sessionId}`} 
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <div className="text-center text-slate-500">Start a capture to view 5GNR MIB data</div>
+                )}
               </div>
             )}
             {activePanelTab === '5gnr-sib' && (
               <div className="h-full p-4 overflow-auto">
-                <div className="text-center text-slate-500">5GNR SIB1 configuration data will appear here</div>
+                {sessionId ? (
+                  <iframe 
+                    src={`/5gnr?session=${sessionId}&tab=sib`} 
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <div className="text-center text-slate-500">Start a capture to view 5GNR SIB1 data</div>
+                )}
               </div>
             )}
             {activePanelTab === '5gnr-capability' && (
               <div className="h-full p-4 overflow-auto">
-                <div className="text-center text-slate-500">5GNR UE Capability data will appear here</div>
+                {sessionId ? (
+                  <iframe 
+                    src={`/5gnr?session=${sessionId}&tab=capability`} 
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <div className="text-center text-slate-500">Start a capture to view UE Capability</div>
+                )}
               </div>
             )}
             {activePanelTab === 'user-graph' && (
               <div className="h-full p-4 overflow-auto">
-                <div className="text-center text-slate-500">User Defined Graphs will appear here</div>
+                {sessionId ? (
+                  <iframe 
+                    src={`/visualize?session=${sessionId}`} 
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <div className="text-center text-slate-500">Start a capture to view graphs</div>
+                )}
               </div>
             )}
             {activePanelTab === 'terminal' && (
-              <EnhancedTerminal sessionId={sessionId} />
+              <EnhancedTerminal sessionId={currentContext?.sessionId?.toString() || null} />
             )}
           </div>
         </div>
@@ -542,14 +672,15 @@ export default function Home() {
       {/* Status Bar */}
       <div className="h-6 bg-blue-600 text-white flex items-center justify-between px-4 text-xs">
         <div className="flex items-center gap-4">
-          <span className={selectedDevice ? 'text-white' : 'text-red-300'}>
-            {selectedDevice ? 'Logging' : 'No Logging'}
+          <span className={isCapturing ? 'text-white font-bold' : 'text-red-300'}>
+            {isCapturing ? `🔴 CAPTURING - Session ${currentContext?.sessionId}` : 'No Logging'}
           </span>
-          <span className="text-red-300">No GPS</span>
-          <span>CPU: 0%</span>
-          <span>Memory: 0%</span>
+          <span className={currentContext ? 'text-white' : 'text-red-300'}>
+            Device: {currentContext?.deviceId || 'None'}
+          </span>
+          <span className="text-white">{devices.length} device(s)</span>
         </div>
-        <div>Extended Cellular Analyzer v0.1.0</div>
+        <div>Extended Cellular Analyzer v0.1.0 | Backend: {devices.length > 0 ? '✓ Connected' : '✗ Disconnected'}</div>
       </div>
     </div>
   )

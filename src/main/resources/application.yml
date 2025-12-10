@@ -2,7 +2,7 @@ spring:
   application:
     name: extended-cellular-analyzer
   r2dbc:
-    url: r2dbc:h2:file:///./data/eca;DB_CLOSE_DELAY=-1;MODE=MySQL
+    url: r2dbc:h2:mem:///eca;DB_CLOSE_DELAY=-1;MODE=MySQL
   sql:
     init:
       mode: always
@@ -30,6 +30,12 @@ eca:
     base-dir: ${ECA_STORAGE_DIR:./data/sessions}
   device:
     detection-interval: 3s
+  automation:
+    enabled: true
+    auto-start-adb-server: true
+    auto-select-device: true
+    auto-start-capture: true
+    default-view: cluster
   kpi:
     window-size: 5m
     metrics:
@@ -39,6 +45,8 @@ eca:
       - LTE_HO_SR
       - WCDMA_RRC_SR
       - CALL_SUCCESS_RATE
+  security:
+    allowed-origins: ${ECA_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
   telemetry:
     sentry:
       dsn: ${SENTRY_DSN:}

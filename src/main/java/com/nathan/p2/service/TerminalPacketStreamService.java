@@ -46,9 +46,15 @@ public class TerminalPacketStreamService {
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         sessionSinks.put(sessionId, sink);
         
-        Path pcapPath = Paths.get("./data/sessions")
+        Path pcapPath = Paths.get(config.getStorage().getBaseDir())
             .resolve("session_" + sessionId)
             .resolve("capture.pcap");
+        
+        if (!pcapPath.toFile().exists()) {
+            log.error("PCAP file not found: {}", pcapPath);
+            sink.tryEmitError(new IllegalStateException("PCAP file not found"));
+            return sink.asFlux();
+        }
         
         try {
             String tsharkPath = PlatformUtils.resolveTSharkPath(config.getTools().getTshark().getPath());
@@ -117,9 +123,15 @@ public class TerminalPacketStreamService {
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         sessionSinks.put(sessionId, sink);
         
-        Path pcapPath = Paths.get("./data/sessions")
+        Path pcapPath = Paths.get(config.getStorage().getBaseDir())
             .resolve("session_" + sessionId)
             .resolve("capture.pcap");
+        
+        if (!pcapPath.toFile().exists()) {
+            log.error("PCAP file not found: {}", pcapPath);
+            sink.tryEmitError(new IllegalStateException("PCAP file not found"));
+            return sink.asFlux();
+        }
         
         try {
             String tsharkPath = PlatformUtils.resolveTSharkPath(config.getTools().getTshark().getPath());
@@ -187,9 +199,15 @@ public class TerminalPacketStreamService {
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         sessionSinks.put(sessionId, sink);
         
-        Path pcapPath = Paths.get("./data/sessions")
+        Path pcapPath = Paths.get(config.getStorage().getBaseDir())
             .resolve("session_" + sessionId)
             .resolve("capture.pcap");
+        
+        if (!pcapPath.toFile().exists()) {
+            log.error("PCAP file not found: {}", pcapPath);
+            sink.tryEmitError(new IllegalStateException("PCAP file not found"));
+            return sink.asFlux();
+        }
         
         try {
             String tsharkPath = PlatformUtils.resolveTSharkPath(config.getTools().getTshark().getPath());
@@ -251,9 +269,13 @@ public class TerminalPacketStreamService {
     private String formatJsonPacket(JsonNode packet) {
         try {
             JsonNode layers = packet.get("_source").get("layers");
-            String frameNum = layers.get("frame.number").get(0).asText();
-            String time = layers.get("frame.time").get(0).asText();
-            String protocols = layers.get("frame.protocols").get(0).asText();
+            JsonNode frameNode = layers.get("frame.number");
+            JsonNode timeNode = layers.get("frame.time");
+            JsonNode protocolsNode = layers.get("frame.protocols");
+            
+            String frameNum = frameNode != null && frameNode.isArray() ? frameNode.get(0).asText() : "0";
+            String time = timeNode != null && timeNode.isArray() ? timeNode.get(0).asText() : "";
+            String protocols = protocolsNode != null && protocolsNode.isArray() ? protocolsNode.get(0).asText() : "";
             
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("\u001B[36m[%s]\u001B[0m ", frameNum));
@@ -261,10 +283,15 @@ public class TerminalPacketStreamService {
             sb.append(String.format("\u001B[33m%s\u001B[0m", protocols));
             
             // Add RSRP/RSRQ if present
-            if (layers.has("lte-rrc.rsrpResult")) {
-                String rsrp = layers.get("lte-rrc.rsrpResult").get(0).asText();
-                double rsrpValue = -180 + Double.parseDouble(rsrp) * 0.0625;
-                sb.append(String.format(" \u001B[32mRSRP: %.2f dBm\u001B[0m", rsrpValue));
+            JsonNode rsrpNode = layers.get("lte-rrc.rsrpResult");
+            if (rsrpNode != null && rsrpNode.isArray() && rsrpNode.size() > 0) {
+                try {
+                    int rsrpIndex = Integer.parseInt(rsrpNode.get(0).asText());
+                    double rsrpValue = -140.0 + rsrpIndex;
+                    sb.append(String.format(" \u001B[32mRSRP: %.1f dBm\u001B[0m", rsrpValue));
+                } catch (NumberFormatException e) {
+                    // Skip invalid RSRP
+                }
             }
             
             return sb.toString();

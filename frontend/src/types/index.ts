@@ -90,16 +90,6 @@ export interface KpiAggregate {
   timestamp?: string
 }
 
-// Record Types
-export interface Record {
-  id: number
-  sessionId: number
-  timestamp: string
-  rat: 'LTE' | 'NR' | 'WCDMA' | 'GSM'
-  layer: 'RRC' | 'NAS' | 'PDCP' | 'RLC' | 'MAC' | 'PHY' | 'IP'
-  messageType: string
-  payloadJson: any
-}
 
 // Anomaly Types
 export interface Anomaly {
@@ -158,6 +148,22 @@ export interface KpiPoint {
   rsrq: number
   sinr?: number
   cqi?: number
+}
+
+// Signaling Message Record Types
+export interface SignalingRecord {
+  id: number
+  sessionId: number
+  timestamp: string
+  protocol: string
+  direction: 'UL' | 'DL'
+  messageType?: string
+  layer?: string
+  frameNumber?: number
+  hexData?: string
+  decodedData?: string
+  length?: number
+  payloadJson: any
 }
 
 // Log Types

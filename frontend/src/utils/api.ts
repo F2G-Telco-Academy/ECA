@@ -6,11 +6,33 @@ import type {
   Anomaly,
   Artifact,
   MapData,
-  Record,
+  SignalingRecord,
   PaginatedResponse
 } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+
+// Retry configuration
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000
+
+// Enhanced fetch with retry logic
+async function fetchWithRetry(url: string, options?: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+  try {
+    const response = await fetch(url, options)
+    if (!response.ok && retries > 0 && response.status >= 500) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+      return fetchWithRetry(url, options, retries - 1)
+    }
+    return response
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+      return fetchWithRetry(url, options, retries - 1)
+    }
+    throw error
+  }
+}
 
 // Enhanced KPI types
 export interface ComprehensiveKpiData {
@@ -55,8 +77,11 @@ export const api = {
   
   // Device Management
   async getDevices(): Promise<Device[]> {
-    const res = await fetch(`${API_BASE}/devices`)
-    if (!res.ok) throw new Error('Failed to fetch devices')
+    const res = await fetchWithRetry(`${API_BASE}/devices`)
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: 'Failed to fetch devices' }))
+      throw new Error(error.message || 'Failed to fetch devices')
+    }
     return res.json()
   },
 
@@ -86,11 +111,17 @@ export const api = {
   },
 
   async startSession(deviceId: string): Promise<Session> {
-    const res = await fetch(`${API_BASE}/sessions/start?deviceId=${deviceId}`, {
+    if (!deviceId || deviceId.trim().length === 0) {
+      throw new Error('Device ID is required')
+    }
+    const res = await fetchWithRetry(`${API_BASE}/sessions/start?deviceId=${encodeURIComponent(deviceId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     })
-    if (!res.ok) throw new Error('Failed to start session')
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: 'Failed to start session' }))
+      throw new Error(error.message || 'Failed to start session')
+    }
     return res.json()
   },
 
@@ -148,13 +179,13 @@ export const api = {
   },
 
   // Records (Signaling Messages)
-  async getRecords(sessionId: string | number, page = 0, size = 50): Promise<PaginatedResponse<Record>> {
+  async getRecords(sessionId: string | number, page = 0, size = 50): Promise<PaginatedResponse<SignalingRecord>> {
     const res = await fetch(`${API_BASE}/records/session/${sessionId}?page=${page}&size=${size}`)
     if (!res.ok) throw new Error('Failed to fetch records')
     return res.json()
   },
 
-  async getRecord(recordId: number): Promise<Record> {
+  async getRecord(recordId: number): Promise<SignalingRecord> {
     const res = await fetch(`${API_BASE}/records/${recordId}`)
     if (!res.ok) throw new Error('Failed to fetch record')
     return res.json()
@@ -346,7 +377,7 @@ export const api = {
   },
 
   // Find optimal K using elbow method
-  async findOptimalK(pcapPath: string, maxK: number = 10): Promise<any> {
+  async findOptimalKFromPcap(pcapPath: string, maxK: number = 10): Promise<any> {
     const res = await fetch(`${API_BASE}/enhanced-clustering/optimal-k?pcapPath=${encodeURIComponent(pcapPath)}&maxK=${maxK}`)
     if (!res.ok) throw new Error('Failed to find optimal K')
     return res.json()

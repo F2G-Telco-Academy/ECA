@@ -48,14 +48,14 @@ public class EnhancedKpiExtractionService {
             events.put("lte_rrc_req", getPacketDetails(pcapFile, "lte-rrc.rrcConnectionRequest_element"));
             events.put("lte_rrc_setup", getPacketDetails(pcapFile, "lte-rrc.rrcConnectionSetup_element"));
             
-            // LTE Attach (FIXED: nas-eps with hyphen)
+            // LTE Attach
             counters.put("lte_attach_req", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x41"));
             counters.put("lte_attach_acc", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x42"));
             counters.put("lte_attach_rej", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x44"));
             events.put("lte_attach_req", getPacketDetails(pcapFile, "nas-eps.nas_msg_emm_type == 0x41"));
             events.put("lte_attach_acc", getPacketDetails(pcapFile, "nas-eps.nas_msg_emm_type == 0x42"));
             
-            // LTE TAU (FIXED: nas-eps with hyphen)
+            // LTE TAU
             counters.put("lte_tau_req", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x48"));
             counters.put("lte_tau_acc", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x49"));
             counters.put("lte_tau_rej", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x4b"));
@@ -64,12 +64,12 @@ public class EnhancedKpiExtractionService {
             counters.put("lte_erab_setup", countPackets(pcapFile, "lte-rrc.rrcConnectionReconfiguration_element"));
             counters.put("lte_erab_complete", countPackets(pcapFile, "lte-rrc.rrcConnectionReconfigurationComplete_element"));
             
-            // LTE PDN Connectivity (FIXED: nas-eps with hyphen)
+            // LTE PDN Connectivity
             counters.put("lte_pdn_req", countPackets(pcapFile, "nas-eps.nas_msg_esm_type == 0xd0"));
             counters.put("lte_pdn_acc", countPackets(pcapFile, "nas-eps.nas_msg_esm_type == 0xd1"));
             counters.put("lte_pdn_rej", countPackets(pcapFile, "nas-eps.nas_msg_esm_type == 0xd2"));
             
-            // LTE Service Request (FIXED: nas-eps with hyphen)
+            // LTE Service Request
             counters.put("lte_service_req", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x4c"));
             counters.put("lte_service_acc", countPackets(pcapFile, "nas-eps.nas_msg_emm_type == 0x4e"));
             
@@ -216,12 +216,12 @@ public class EnhancedKpiExtractionService {
             ProcessBuilder pb = new ProcessBuilder(
                 tsharkPath, "-r", pcapFile.toString(),
                 "-d", "udp.port==4729,gsmtap",
-                "-Y", "lte_rrc.measResultPCell_element || lte_rrc.measResultSCell_r12_element",
+                "-Y", "lte-rrc.measResultPCell_element || lte-rrc.measResultSCell_r12_element",
                 "-T", "fields",
-                "-e", "lte_rrc.rsrpResult_r12",
-                "-e", "lte_rrc.rsrqResult_r12",
-                "-e", "lte_rrc.rs_sinr_Result_r13",
-                "-e", "lte_rrc.physCellId_r12"
+                "-e", "lte-rrc.rsrpResult_r12",
+                "-e", "lte-rrc.rsrqResult_r12",
+                "-e", "lte-rrc.rs_sinr_Result_r13",
+                "-e", "lte-rrc.physCellId_r12"
             );
             
             Process process = pb.start();

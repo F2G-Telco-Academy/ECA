@@ -1,9 +1,24 @@
 # Extended Cellular Analyzer (ECA) - Product Requirements Document
 
-**Version:** 1.0  
-**Last Updated:** 2025-12-08  
-**Status:** Active Development  
-**Target Release:** v0.1.0 (MVP)
+<!-- Quick overview added for fast onboarding -->
+## Quick Project Overview
+- Purpose: Professional cellular network analysis with auto-capture, real-time analysis, and offline-first UX.
+- Architecture: Next.js + Tauri frontend, Spring Boot WebFlux backend, SQLite (R2DBC), external tools (SCAT, TShark, ADB).
+- Core Capabilities: Auto device detection, session lifecycle, log conversion to PCAP, TShark decoding, SSE log streaming, KPI calc, anomaly detection, maps, reporting.
+- MVP Status: Backend APIs complete (19/19), terminal/log streaming operational, SQLite persistence, basic KPIs, core orchestration in place.
+
+## Key Components & Flows
+- Device Flow: ADB detects device → Session auto-start → CaptureOrchestrationService spawns SCAT/TShark/ADB processes → SSE logs → SQLite persistence.
+- Data Flow: .sdm/.qmdl2 → SCAT → .pcap → TShark → JSON Records → KPI extractor → Aggregates, anomalies, GPS traces → UI (charts/map/terminal).
+- Frontend Integration: REST for data, SSE for logs; Tauri for OS file ops only.
+- Persistence Model: sessions, artifacts, kpi_aggregates, anomalies, records, gps_traces.
+
+## Immediate Engineering Priorities (Concise)
+- Analysis: Throughput + latency KPIs, configurable windows (1s/5s/30s/1m).
+- Anomalies: Rule engine for coverage/quality/handover/drops with severity + GPS.
+- Visualization: KPI heatmaps, anomaly markers, time playback, offline tiles.
+- UI: Protocol message viewer (pagination, filters, search, detail).
+- Quality: Unit/integration tests for core services, standardized error handling.
 
 ---
 
@@ -1285,6 +1300,15 @@ To democratize cellular network analysis by providing professional-grade tools t
 10. Add license management
 11. Create user management UI
 12. Add audit logging
+
+---
+
+## 12. Onboarding Tips (New)
+- Backend: Run Spring Boot on localhost:8080; inspect Swagger at /swagger-ui.html.
+- Frontend: Next.js on localhost:3000; use src/utils/api.ts for calls; SSE for logs.
+- Data: SQLite at ./data/eca.db; sessions in ./data/sessions/.
+- Tools: Ensure SCAT, TShark, ADB are installed and accessible via PATH; externalize paths in application.yml.
+- Debug: Use CaptureOrchestrationService logs; start with small PCAP (<1GB) to validate pipeline.
 
 ---
 

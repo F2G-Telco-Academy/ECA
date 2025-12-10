@@ -30,9 +30,16 @@ export default function SignalingMessageViewer({ sessionId }: SignalingMessageVi
     const eventSource = new EventSource(`http://localhost:8080/api/sessions/${sessionId}/signaling`)
     
     eventSource.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
-      setMessages(prev => [...prev, msg].slice(-1000)) // Keep last 1000 messages
+      try {
+        const data = event.data.replace(/^data: /, '')
+        const msg = JSON.parse(data)
+        setMessages(prev => [...prev, msg].slice(-1000))
+      } catch (e) {
+        console.error('Parse error:', e)
+      }
     }
+
+    eventSource.onerror = () => eventSource.close()
 
     return () => eventSource.close()
   }, [sessionId, isPaused])
@@ -146,16 +153,16 @@ export default function SignalingMessageViewer({ sessionId }: SignalingMessageVi
                     selectedMessage === msg ? 'bg-gray-700' : ''
                   }`}
                 >
-                  <td className="px-2 py-1 text-gray-300">{msg.timestamp}</td>
-                  <td className={`px-2 py-1 ${getChannelColor(msg.channel)}`}>
-                    {msg.direction === 'UL' ? '→' : '←'} {msg.channel}
+                  <td className="px-2 py-1 text-gray-300 font-mono text-[10px]">{msg.timestamp || new Date().toISOString().split('T')[1].slice(0,12)}</td>
+                  <td className={`px-2 py-1 ${getChannelColor(msg.channel)} font-semibold text-[10px]`}>
+                    {msg.direction === 'UL' ? '→ UL' : '← DL'}
                   </td>
-                  <td className="px-2 py-1 text-gray-400">{msg.protocol}</td>
-                  <td className={`px-2 py-1 ${getChannelColor(msg.channel)}`}>
-                    {msg.channel}
+                  <td className="px-2 py-1 text-gray-400 text-[10px]">{msg.protocol || 'N/A'}</td>
+                  <td className={`px-2 py-1 ${getChannelColor(msg.channel)} text-[10px]`}>
+                    {msg.channel || 'UNKNOWN'}
                   </td>
-                  <td className={`px-2 py-1 ${getChannelColor(msg.channel)}`}>
-                    {msg.messageType}
+                  <td className={`px-2 py-1 ${getChannelColor(msg.channel)} font-mono text-[10px]`}>
+                    {msg.messageType || 'Unknown Message'}
                   </td>
                 </tr>
               ))}

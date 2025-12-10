@@ -43,7 +43,7 @@ export default function ProductionGPSClusteringMap({ pcapPath }: Props) {
       setGpsData(traces)
 
       // Find optimal K
-      const elbowResult = await api.findOptimalK(pcapPath, 10)
+      const elbowResult = await api.findOptimalKFromPcap(pcapPath, 10)
       setOptimalK(elbowResult.optimalK)
       setNumClusters(elbowResult.optimalK)
 

@@ -27,6 +27,9 @@ public class ToolsConfig {
     public static class Tool {
         private String path;
         private String pythonPath = "python3";
+        private String type = "qc";
+        private int port = 4729;
+        private String hostname = "localhost";
     }
     
     @Data

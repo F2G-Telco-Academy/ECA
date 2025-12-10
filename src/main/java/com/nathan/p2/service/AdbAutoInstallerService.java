@@ -180,24 +180,29 @@ public class AdbAutoInstallerService {
             return adbExecutable;
         }
 
-        Path installDir = getInstallDirectory();
         String adbName = PlatformUtils.isWindows() ? "adb.exe" : "adb";
         
-        // Check in platform-tools subdirectory
+        // Check bundled tools first
+        Path bundled = Paths.get("tools", "adb", "platform-tools", adbName);
+        if (Files.exists(bundled)) {
+            adbExecutable = bundled;
+            log.info("Using bundled ADB: {}", bundled);
+            return bundled;
+        }
+        
+        Path installDir = getInstallDirectory();
         Path platformTools = installDir.resolve("platform-tools").resolve(adbName);
         if (Files.exists(platformTools)) {
             adbExecutable = platformTools;
             return platformTools;
         }
 
-        // Check in root install directory
         Path rootAdb = installDir.resolve(adbName);
         if (Files.exists(rootAdb)) {
             adbExecutable = rootAdb;
             return rootAdb;
         }
 
-        // Return expected path
         adbExecutable = platformTools;
         return platformTools;
     }

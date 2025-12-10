@@ -27,8 +27,11 @@ public class PlatformUtils {
             return configuredPath;
         }
         
+        // Check bundled tools first
+        String bundled = getBundledToolPath("adb", IS_WINDOWS ? "adb.exe" : "adb");
+        if (bundled != null) return bundled;
+        
         if (IS_WINDOWS) {
-            // Try common Windows locations
             List<String> windowsPaths = Arrays.asList(
                 "adb.exe",
                 "C:\\Android\\platform-tools\\adb.exe",
@@ -42,10 +45,10 @@ public class PlatformUtils {
                     return path;
                 }
             }
-            return "adb.exe"; // Fallback to PATH
+            return "adb.exe";
         }
         
-        return "adb"; // Linux/Mac
+        return "adb";
     }
     
     /**
@@ -56,8 +59,11 @@ public class PlatformUtils {
             return configuredPath;
         }
         
+        // Check bundled tools first
+        String bundled = getBundledToolPath("python", IS_WINDOWS ? "python.exe" : "python3");
+        if (bundled != null) return bundled;
+        
         if (IS_WINDOWS) {
-            // Try common Windows locations
             List<String> windowsPaths = Arrays.asList(
                 "python.exe",
                 "py.exe",
@@ -73,10 +79,10 @@ public class PlatformUtils {
                     return path;
                 }
             }
-            return "python.exe"; // Fallback to PATH
+            return "python.exe";
         }
         
-        return "python3"; // Linux/Mac
+        return "python3";
     }
     
     /**
@@ -87,8 +93,11 @@ public class PlatformUtils {
             return configuredPath;
         }
         
+        // Check bundled tools first
+        String bundled = getBundledToolPath("tshark", IS_WINDOWS ? "tshark.exe" : "tshark");
+        if (bundled != null) return bundled;
+        
         if (IS_WINDOWS) {
-            // Try common Windows locations
             List<String> windowsPaths = Arrays.asList(
                 "tshark.exe",
                 "C:\\Program Files\\Wireshark\\tshark.exe",
@@ -101,10 +110,10 @@ public class PlatformUtils {
                     return path;
                 }
             }
-            return "tshark.exe"; // Fallback to PATH
+            return "tshark.exe";
         }
         
-        return "tshark"; // Linux/Mac
+        return "tshark";
     }
     
     /**
@@ -135,5 +144,24 @@ public class PlatformUtils {
         if (IS_WINDOWS) return "Windows";
         if (IS_MAC) return "macOS";
         return "Linux";
+    }
+    
+    /**
+     * Get bundled tool path (checks tools/ directory in application root)
+     */
+    private static String getBundledToolPath(String toolName, String executable) {
+        try {
+            // Get application directory
+            String appDir = System.getProperty("user.dir");
+            Path toolPath = Paths.get(appDir, "tools", toolName, executable);
+            
+            if (Files.exists(toolPath)) {
+                log.info("Found bundled {} at: {}", toolName, toolPath);
+                return toolPath.toString();
+            }
+        } catch (Exception e) {
+            log.debug("Could not find bundled {}: {}", toolName, e.getMessage());
+        }
+        return null;
     }
 }

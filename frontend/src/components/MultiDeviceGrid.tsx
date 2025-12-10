@@ -106,7 +106,7 @@ export default function MultiDeviceGrid({ devices, onDeviceSelect }: MultiDevice
                   <div className="flex items-center gap-2 mb-1">
                     <div className={`w-2 h-2 rounded-full ${getStatusColor(getDeviceStatus(device))} animate-pulse`} />
                     <span className="text-white font-semibold text-sm">
-                      {device.deviceModel || device.deviceId}
+                      {(device as any).deviceModel || device.deviceId}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400 font-mono">

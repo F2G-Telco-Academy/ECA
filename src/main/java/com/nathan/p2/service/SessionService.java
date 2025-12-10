@@ -71,6 +71,19 @@ public class SessionService {
         return sessionRepository.findRecentSessions(limit);
     }
 
+    public Mono<Session> createOfflineSession(String deviceId, String pcapPath) {
+        Session session = Session.builder()
+                .deviceId(deviceId)
+                .deviceModel("Offline")
+                .firmware("N/A")
+                .startTime(LocalDateTime.now())
+                .endTime(LocalDateTime.now())
+                .status(SessionStatus.COMPLETED)
+                .sessionDir(java.nio.file.Paths.get(pcapPath).getParent().toString())
+                .build();
+        return sessionRepository.save(session);
+    }
+
     private String createSessionDirectory(String deviceId) {
         try {
             String timestamp = LocalDateTime.now().toString().replace(":", "-");

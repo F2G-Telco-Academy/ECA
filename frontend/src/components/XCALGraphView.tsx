@@ -47,9 +47,9 @@ export default function XCALGraphView({ sessionId }: { sessionId: string | null 
               case 'rsrq': value = kpis.rsrq || -10; break
               case 'sinr': value = kpis.sinr || 0; break
               case 'throughput': value = kpis.throughput?.dl || 0; break
-              case 'cqi': value = kpis.cqi || 0; break
-              case 'mcs': value = kpis.mcs || 0; break
-              case 'bler': value = kpis.bler || 0; break
+              case 'cqi': value = (kpis as any).cqi || 0; break
+              case 'mcs': value = (kpis as any).mcs || 0; break
+              case 'bler': value = (kpis as any).bler || 0; break
               default: value = 0
             }
             

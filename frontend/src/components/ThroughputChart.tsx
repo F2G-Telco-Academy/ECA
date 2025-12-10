@@ -11,8 +11,8 @@ export default function ThroughputChart({ pcapPath }: { pcapPath: string }) {
 
   if (!data) return <div className="p-4">Loading throughput data...</div>
 
-  const dlMbps = data.downlinkBytes ? (data.downlinkBytes * 8 / 1_000_000).toFixed(2) : 0
-  const ulMbps = data.uplinkBytes ? (data.uplinkBytes * 8 / 1_000_000).toFixed(2) : 0
+  const dlMbps = data.downlinkBytes ? (data.downlinkBytes * 8 / 1_000_000).toFixed(2) : '0'
+  const ulMbps = data.uplinkBytes ? (data.uplinkBytes * 8 / 1_000_000).toFixed(2) : '0'
 
   return (
     <div className="bg-white p-4 rounded shadow">

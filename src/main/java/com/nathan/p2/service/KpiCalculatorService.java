@@ -24,11 +24,21 @@ public class KpiCalculatorService {
     private final MissingKpiExtractor missingKpiExtractor;
     private final ConfigurationKpiExtractor configurationExtractor;
     private final ProcedureCorrelationService correlationService;
+    private final GpsPersistenceService gpsPersistenceService;
+    private final ComprehensivePcapExtractorService pcapExtractor;
 
     public Mono<Void> calculate(Long sessionId, Path pcapFile) {
         log.info("📊 Calculating ALL KPIs for ALL RATs (5G/LTE/WCDMA/GSM) - Session {}", sessionId);
         
-        return Flux.merge(
+        // First, extract and save GPS traces from PCAP
+        Mono<Void> saveGps = pcapExtractor.extractCompleteDataset(pcapFile)
+            .flatMapMany(dataset -> gpsPersistenceService.saveGpsTracesFromDataset(sessionId, dataset))
+            .then()
+            .doOnSuccess(v -> log.info("✅ GPS traces saved for session {}", sessionId))
+            .doOnError(e -> log.warn("⚠️ GPS extraction failed (will continue without GPS): {}", e.getMessage()));
+
+        // Then calculate all KPIs (in parallel with GPS saving for performance)
+        Mono<Void> calculateKpis = Flux.merge(
             // === 5G NR KPIs ===
             calculate5gRrcSr(sessionId, pcapFile),
             calculate5gPduSessionSr(sessionId, pcapFile),
@@ -88,9 +98,13 @@ public class KpiCalculatorService {
             // === Configuration KPIs (QoS, RRC config tracking) ===
             extractConfigurationKpis(sessionId, pcapFile)
         )
-        .then()
-        .doOnSuccess(v -> log.info("✅ All KPIs calculated for session {}", sessionId))
-        .doOnError(e -> log.error("❌ KPI calculation failed for session {}", sessionId, e));
+        .then();
+
+        // Execute GPS extraction and KPI calculation in parallel, wait for both
+        return Mono.when(saveGps, calculateKpis)
+            .then()
+            .doOnSuccess(v -> log.info("✅ All KPIs and GPS traces calculated for session {}", sessionId))
+            .doOnError(e -> log.error("❌ KPI calculation failed for session {}", sessionId, e));
     }
 
     // ==================== 5G NR KPIs ====================

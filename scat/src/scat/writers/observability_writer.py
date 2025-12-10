@@ -61,7 +61,7 @@ class ObservabilityWriter:
             
             # Write to protocol analysis log file
             import os
-            log_dir = '/home/boutchouang-nathan/Documents/SCAT/scat/logs'
+            log_dir = os.path.join(os.getcwd(), 'logs')
             os.makedirs(log_dir, exist_ok=True)
             
             with open(f'{log_dir}/protocol_analysis.log', 'a') as f:

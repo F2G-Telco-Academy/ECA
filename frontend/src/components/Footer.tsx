@@ -1,9 +1,9 @@
 interface Props {
-  packetCount: number;
-  deviceCount: number;
+  packetCount?: number;
+  deviceCount?: number;
 }
 
-export default function Footer({ packetCount, deviceCount }: Props) {
+export default function Footer({ packetCount = 0, deviceCount = 0 }: Props) {
   return (
     <div className="border-t border-gray-800 bg-black px-6 py-2">
       <div className="flex items-center justify-between text-xs">

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { api } from '@/utils/api'
-import type { Record } from '@/types'
+import type { SignalingRecord } from '@/types'
 
 interface SignalingMessage {
   time: string
@@ -28,9 +28,9 @@ export default function XCALSignalingViewer({ sessionId }: { sessionId: string |
         const records = await api.getRecords(sessionId, 0, 100)
         const newMessages: SignalingMessage[] = records.content.map(r => ({
           time: new Date(r.timestamp).toLocaleTimeString(),
-          ueNet: r.layer,
-          channel: r.rat,
-          message: r.messageType,
+          ueNet: r.layer || 'UNKNOWN',
+          channel: r.protocol || 'UNKNOWN',
+          message: r.messageType || 'Unknown Message',
           details: r.payloadJson
         }))
         setMessages(prev => [...prev, ...newMessages].slice(-1000)) // Keep last 1000

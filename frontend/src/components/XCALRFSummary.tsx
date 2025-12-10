@@ -55,10 +55,10 @@ export default function XCALRFSummary({ sessionId }: { sessionId: string | null 
           throughput: kpis.throughput || prev.throughput,
           lte: {
             pcell: {
-              rsrp: kpis.rsrp,
-              rsrq: kpis.rsrq,
-              sinr: kpis.sinr,
-              ...prev.lte.pcell
+              ...prev.lte.pcell,
+              rsrp: kpis.rsrp ?? prev.lte.pcell.rsrp,
+              rsrq: kpis.rsrq ?? prev.lte.pcell.rsrq,
+              sinr: kpis.sinr ?? prev.lte.pcell.sinr
             },
             scells: prev.lte.scells
           }

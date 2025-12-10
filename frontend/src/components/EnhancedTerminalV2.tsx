@@ -110,6 +110,7 @@ export default function EnhancedTerminalV2({ sessionId }: EnhancedTerminalV2Prop
     
     eventSource.onmessage = (event) => {
       const line = event.data
+      if (!line || line.trim() === '') return
       setPacketCount(prev => prev + 1)
       
       let coloredLine = line
@@ -134,11 +135,13 @@ export default function EnhancedTerminalV2({ sessionId }: EnhancedTerminalV2Prop
       term.writeln(coloredLine)
     }
     
-    eventSource.onerror = () => {
+    eventSource.onerror = (error) => {
       setIsConnected(false)
       term.writeln('')
-      term.writeln('\x1b[31m[ERROR] Connection lost. Attempting to reconnect...\x1b[0m')
+      term.writeln('\x1b[31m[ERROR] Connection lost. Check if session exists and PCAP file is available.\x1b[0m')
+      term.writeln('\x1b[90m[INFO] Session ID: ' + sessionId + ', Mode: ' + streamMode + '\x1b[0m')
       term.writeln('')
+      console.error('EventSource error:', error)
     }
 
     return () => {
