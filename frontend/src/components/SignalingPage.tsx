@@ -253,6 +253,14 @@ export default function SignalingPage({
       </div>
       <div className="text-sm font-semibold text-gray-500">{title}</div>
       <div className="text-xs text-gray-400">{subtitle}</div>
+      <a
+        href="https://reactjs.org/link/react-devtools"
+        className="mt-2 text-xs text-blue-600 hover:underline"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Voir la doc diag (*#0808*)
+      </a>
     </div>
   )
 
@@ -409,6 +417,16 @@ export default function SignalingPage({
                 ref={tableRef}
                 className={`flex-1 overflow-auto bg-white max-h-[720px] ${fullscreenTable ? "fixed inset-4 z-50 border shadow-lg" : ""}`}
               >
+                {fullscreenTable && (
+                  <div className="flex justify-end px-4 py-2">
+                    <button
+                      className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 text-sm"
+                      onClick={() => setFullscreenTable(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
                 {filteredMessages.length === 0 ? (
                   capturing ? (
                     <div className="grid grid-cols-1 gap-2 p-4">

@@ -3,15 +3,15 @@ interface Props {
   onPageChange?: (page: string) => void
   onMenuToggle?: () => void
   onThemeToggle?: () => void
-  theme?: 'light' | 'dark'
+  theme?: "light" | "dark"
 }
 
 export default function TopBar({ currentPage, onPageChange, onMenuToggle, onThemeToggle, theme }: Props = {}) {
   const tabs = [
-    { id: 'signaling', label: 'Live Signaling' },
-    { id: 'convert', label: 'Convert' },
-    { id: 'visualize', label: 'Visualize' },
-    { id: 'analyze', label: 'Analyze' },
+    { id: "signaling", label: "Live Signaling", icon: "📡" },
+    { id: "convert", label: "Convert", icon: "📄" },
+    { id: "visualize", label: "Visualize", icon: "📈" },
+    { id: "analyze", label: "Analyze", icon: "🔍" },
   ]
 
   return (
@@ -39,26 +39,25 @@ export default function TopBar({ currentPage, onPageChange, onMenuToggle, onThem
             onClick={onThemeToggle}
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? '☀' : '🌙'}
+            {theme === "dark" ? "🌙" : "🌞"}
           </button>
           <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
           <span>System Ready</span>
         </div>
       </div>
 
-      <div className="flex px-2 overflow-x-auto border-t border-gray-200 bg-gray-50">
+      <div className="flex px-4 py-2 overflow-x-auto gap-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
-            className={`px-4 py-2 text-xs border-b-2 transition ${
-              currentPage === t.id
-                ? 'border-blue-600 text-blue-700 bg-white'
-                : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-white'
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${
+              currentPage === t.id ? "bg-black text-white shadow-sm" : "bg-transparent text-gray-700 hover:bg-gray-100"
             }`}
             onClick={() => onPageChange?.(t.id)}
           >
-            {t.label}
+            <span>{t.icon}</span>
+            <span>{t.label}</span>
           </button>
         ))}
       </div>

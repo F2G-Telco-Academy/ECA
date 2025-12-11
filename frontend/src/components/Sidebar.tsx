@@ -23,12 +23,12 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
     []
   )
 
-  const panelBg = theme === 'dark' ? 'bg-slate-900 text-gray-100 border-slate-800' : 'bg-black text-gray-100 border-gray-800'
-  const itemHover = theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-gray-900'
+  const panelBg = 'bg-black text-gray-100 border-gray-800'
+  const itemHover = 'hover:bg-gray-900'
 
   return (
     <div className={`w-64 flex flex-col h-full border-r ${panelBg}`}>
-      <div className={`px-4 py-3 border-b ${theme === 'dark' ? 'border-slate-800' : 'border-gray-800'}`}>
+      <div className="px-4 py-3 border-b border-gray-800">
         <div className="text-sm font-semibold">Extended Cellular</div>
         <div className="text-[11px] text-gray-400">Analyzer</div>
       </div>
@@ -42,7 +42,7 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
               key={d.deviceId}
               onClick={() => onDeviceSelect(d.deviceId)}
               className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded border border-transparent ${
-                selectedDevice === d.deviceId ? 'bg-blue-600 text-white' : `${itemHover} text-gray-200`
+                selectedDevice === d.deviceId ? 'bg-slate-800 text-white' : `${itemHover} text-gray-200`
               }`}
             >
               <div className="flex items-center gap-2">
