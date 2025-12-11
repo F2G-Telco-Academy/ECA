@@ -5,13 +5,14 @@ import XCALSignalingViewer from '@/components/XCALSignalingViewer'
 import TabulatedKPIView from '@/components/TabulatedKPIView'
 import UserDefinedTable from '@/components/UserDefinedTable'
 import MultiDeviceGrid from '@/components/MultiDeviceGrid'
+import MapView from '@/components/MapView'
 import { api } from '@/utils/api'
 import type { Device } from '@/types'
 
 interface Tab {
   id: string
   title: string
-  type: 'grid' | 'rf-summary' | 'signaling' | 'tabulated' | 'user-table' | 'graph'
+  type: 'grid' | 'rf-summary' | 'signaling' | 'tabulated' | 'user-table' | 'graph' | 'map'
   kpiType?: string
 }
 
@@ -48,7 +49,8 @@ export default function XCALInterface() {
       '5GNR SA Information (SIB1)': { type: 'tabulated', kpiType: '5GNR SA Information (SIB1)' },
       '5GNR Handover Statistics (intra NR-HO)': { type: 'tabulated', kpiType: '5GNR Handover Statistics' },
       'User Defined Table': { type: 'user-table' },
-      'User Defined Graph': { type: 'graph' }
+      'User Defined Graph': { type: 'graph' },
+      'Map View': { type: 'map' }
     }
 
     const viewConfig = viewTypeMap[viewName] || { type: 'tabulated', kpiType: viewName }
@@ -100,6 +102,8 @@ export default function XCALInterface() {
         return <TabulatedKPIView sessionId={sessionId} kpiType={tab.kpiType || 'General'} />
       case 'user-table':
         return <UserDefinedTable sessionId={sessionId} />
+      case 'map':
+        return <MapView sessionId={sessionId} />
       case 'graph':
         return <div className="h-full bg-gray-900 text-white flex items-center justify-center">Graph View - Coming Soon</div>
       default:
