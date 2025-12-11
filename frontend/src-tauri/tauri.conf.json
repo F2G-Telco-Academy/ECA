@@ -27,13 +27,46 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["msi", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "wix": {
+        "language": "en-US",
+        "template": "wix/main.wxs",
+        "fragmentPaths": [],
+        "componentRefs": [],
+        "featureRefs": [],
+        "mergeRefs": [],
+        "skipWebviewInstall": false,
+        "license": "../../LICENSE",
+        "enableElevatedUpdateTask": true,
+        "bannerPath": "wix/banner.bmp",
+        "dialogImagePath": "wix/dialog.bmp"
+      },
+      "nsis": {
+        "license": "../../LICENSE",
+        "headerImage": "nsis/header.bmp",
+        "sidebarImage": "nsis/sidebar.bmp",
+        "installerIcon": "icons/icon.ico",
+        "installMode": "perMachine",
+        "languages": ["en-US"],
+        "displayLanguageSelector": false,
+        "compression": "lzma"
+      }
+    },
+    "publisher": "F2G Telco Academy",
+    "copyright": "Copyright © 2025 F2G Telco Academy. All rights reserved.",
+    "category": "DeveloperTool",
+    "shortDescription": "Professional cellular network analyzer for 5G/4G/3G/2G",
+    "longDescription": "Extended Cellular Analyzer (ECA) is a professional tool for capturing, analyzing, and visualizing cellular network data. Supports 5G NR, LTE, WCDMA, and GSM technologies with real-time KPI monitoring, signaling analysis, and GPS mapping."
   }
 }

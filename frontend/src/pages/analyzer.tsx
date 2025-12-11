@@ -10,6 +10,7 @@ import GraphView from '@/components/GraphView'
 import TerminalViewer from '@/components/TerminalViewer'
 import QualcommViewer from '@/components/QualcommViewer'
 import MultiPanelGrid from '@/components/MultiPanelGrid'
+import AboutDialog from '@/components/AboutDialog'
 import { api } from '@/utils/api'
 import type { Device } from '@/types'
 
@@ -28,6 +29,7 @@ export default function AnalyzerInterface() {
     { id: '1', title: 'Multi-Panel View', type: 'multi-panel' }
   ])
   const [activeTabId, setActiveTabId] = useState('1')
+  const [showAbout, setShowAbout] = useState(false)
 
   useEffect(() => {
     const fetchDevices = async () => {
@@ -146,10 +148,13 @@ export default function AnalyzerInterface() {
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Top Menu Bar */}
       <div className="bg-white border-b border-gray-300 px-4 py-1 flex items-center gap-4 text-sm">
-        {['File', 'Setting', 'Statistics/Status', 'User Defined', 'Call Statistics', 'Mobile Reset', 'Window', 'Help'].map(menu => (
+        {['File', 'Setting', 'Statistics/Status', 'User Defined', 'Call Statistics', 'Mobile Reset', 'Window'].map(menu => (
           <span key={menu} className="font-semibold cursor-pointer hover:text-blue-600">{menu}</span>
         ))}
+        <span onClick={() => setShowAbout(true)} className="font-semibold cursor-pointer hover:text-blue-600">Help</span>
       </div>
+
+      <AboutDialog isOpen={showAbout} onClose={() => setShowAbout(false)} />
 
       {/* Toolbar */}
       <div className="bg-gray-200 border-b border-gray-300 px-2 py-1 flex items-center gap-1">
@@ -233,7 +238,10 @@ export default function AnalyzerInterface() {
         <div><span className="font-semibold">No GPS</span></div>
         <div><span className="font-semibold">{currentSession ? 'Logging' : 'Not Logging'}</span> <span>CPU: {Math.floor(Math.random() * 30 + 40)}%</span></div>
         <div><span className="font-semibold">Memory</span> <span>{Math.floor(Math.random() * 20 + 60)}%</span></div>
-        <div className="ml-auto"><span>ECA : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span></div>
+        <div className="ml-auto flex items-center gap-4">
+          <span>ECA v0.1.0 : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span>
+          <span className="text-xs opacity-80">© 2025 F2G Telco Academy - Proprietary Software</span>
+        </div>
       </div>
     </div>
   )

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Id="*"
+    Name="Extended Cellular Analyzer"
+    Language="1033"
+    Version="0.1.0"
+    Manufacturer="F2G Telco Academy"
+    UpgradeCode="{{upgrade_code}}">
+    
+    <Package
+      InstallerVersion="450"
+      Compressed="yes"
+      InstallScope="perMachine"
+      Description="Extended Cellular Analyzer - Professional cellular network analysis tool"
+      Comments="Supports 5G NR, LTE, WCDMA, and GSM technologies"
+      Manufacturer="F2G Telco Academy" />
+
+    <MajorUpgrade
+      Schedule="afterInstallInitialize"
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Custom UI with professional installer wizard -->
+    <UIRef Id="WixUI_Advanced" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="dialog.bmp" />
+
+    <!-- Properties -->
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/F2G-Telco-Academy/ECA" />
+    <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />
+    <Property Id="ARPNOMODIFY" Value="yes" Secure="yes" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/F2G-Telco-Academy/ECA/issues" />
+    <Property Id="ARPCOMMENTS" Value="Professional cellular network analyzer for 5G/4G/3G/2G" />
+    
+    <!-- Application Folder -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="APPLICATIONFOLDER" Name="Extended Cellular Analyzer">
+          <Component Id="MainExecutable" Guid="*">
+            <File
+              Id="ExecutableFile"
+              Source="$(var.CargoTargetBinDir)\extended-cellular-analyzer.exe"
+              KeyPath="yes"
+              Checksum="yes" />
+            
+            <!-- Desktop shortcut -->
+            <Shortcut
+              Id="DesktopShortcut"
+              Directory="DesktopFolder"
+              Name="Extended Cellular Analyzer"
+              Description="Professional cellular network analyzer"
+              WorkingDirectory="APPLICATIONFOLDER"
+              Icon="ProductIcon"
+              IconIndex="0"
+              Advertise="yes" />
+            
+            <!-- Start Menu shortcut -->
+            <Shortcut
+              Id="StartMenuShortcut"
+              Directory="ProgramMenuFolder"
+              Name="Extended Cellular Analyzer"
+              Description="Professional cellular network analyzer"
+              WorkingDirectory="APPLICATIONFOLDER"
+              Icon="ProductIcon"
+              IconIndex="0"
+              Advertise="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder" />
+      <Directory Id="DesktopFolder" />
+    </Directory>
+
+    <!-- Features -->
+    <Feature
+      Id="MainApplication"
+      Title="Extended Cellular Analyzer"
+      Description="Main application and core features"
+      Level="1"
+      ConfigurableDirectory="APPLICATIONFOLDER"
+      AllowAdvertise="yes"
+      Display="expand"
+      Absent="disallow">
+      <ComponentRef Id="MainExecutable" />
+    </Feature>
+
+    <!-- Icon -->
+    <Icon Id="ProductIcon" SourceFile="icons\icon.ico" />
+
+  </Product>
+</Wix>

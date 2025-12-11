@@ -216,6 +216,40 @@ NEXT_PUBLIC_API_URL=http://localhost:8080/api
 
 ---
 
+## 📦 Windows Installer (MSI/NSIS)
+
+The application includes a professional Windows installer with:
+- Custom welcome screen with branding
+- License agreement display
+- Destination folder selection
+- Desktop and Start Menu shortcuts
+- Uninstaller support
+
+### Building the Installer
+
+```bash
+cd frontend
+npm run tauri build
+```
+
+The installer will be created in `frontend/src-tauri/target/release/bundle/`
+
+### Installer Images
+
+To customize the installer appearance, provide these images in `frontend/src-tauri/wix/`:
+
+**WiX Installer (MSI):**
+- `banner.bmp` - 493 x 58 pixels, 24-bit BMP (top banner)
+- `dialog.bmp` - 493 x 312 pixels, 24-bit BMP (welcome screen)
+
+**NSIS Installer:**
+- `header.bmp` - 150 x 57 pixels, 24-bit BMP
+- `sidebar.bmp` - 164 x 314 pixels, 24-bit BMP
+
+Use the `logo.png` from project root to create these images with proper dimensions.
+
+---
+
 ## 📦 Project Structure
 
 ```
