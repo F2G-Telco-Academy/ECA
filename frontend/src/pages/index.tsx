@@ -33,9 +33,28 @@ export default function LegacyHome() {
         if (data.length > 0 && !currentContext) {
           deviceContext.setDevice(data[0].deviceId, data[0].model, data[0].manufacturer)
         }
+        setStatusMessage('')
       } catch (err) {
-        console.error('Failed to fetch devices:', err)
-        setStatusMessage('Backend not connected')
+        console.error('Failed to fetch devices from backend:', err)
+        // Fallback to Tauri IPC
+        try {
+          const { invoke } = await import('@tauri-apps/api/core')
+          const adbDevices = await invoke('list_adb_devices') as string[]
+          const deviceList = adbDevices.map(id => ({
+            deviceId: id,
+            model: 'Unknown',
+            manufacturer: 'Unknown',
+            connected: true
+          }))
+          setDevices(deviceList)
+          if (deviceList.length > 0 && !currentContext) {
+            deviceContext.setDevice(deviceList[0].deviceId, 'Unknown', 'Unknown')
+          }
+          setStatusMessage('Using Tauri IPC (Backend offline)')
+        } catch (tauriErr) {
+          console.error('Tauri IPC also failed:', tauriErr)
+          setStatusMessage('No backend - Start backend manually')
+        }
       }
     }
     fetchDevices()

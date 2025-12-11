@@ -5,17 +5,10 @@ use std::path::PathBuf;
 use std::process::{Command, Child, Stdio};
 use std::sync::Mutex;
 use tauri::{Manager, State};
-use serde::{Deserialize, Serialize};
 
 // Backend process state
 struct BackendState {
     process: Mutex<Option<Child>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiResponse<T> {
-    data: Option<T>,
-    error: Option<String>,
 }
 
 // ========== FILE SYSTEM COMMANDS ==========
@@ -62,18 +55,34 @@ fn open_file_location(path: String) -> Result<(), String> {
 // ========== BACKEND PROCESS MANAGEMENT ==========
 
 #[tauri::command]
-async fn start_backend(state: State<'_, BackendState>, app: tauri::AppHandle) -> Result<String, String> {
+async fn start_backend(state: State<'_, BackendState>, _app: tauri::AppHandle) -> Result<String, String> {
     let mut process_guard = state.process.lock().unwrap();
     
     if process_guard.is_some() {
         return Ok("Backend already running".to_string());
     }
 
-    // Get the app directory
-    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let backend_dir = app_dir.parent().unwrap().parent().unwrap().join("SpringbootProjects/p2");
+    // Get the backend directory - go up from frontend/src-tauri to ECA root
+    let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let backend_dir = exe_path
+        .parent()
+        .and_then(|p| p.parent())
+        .and_then(|p| p.parent())
+        .and_then(|p| p.parent())
+        .ok_or("Failed to find backend directory")?
+        .to_path_buf();
 
     // Start Spring Boot backend
+    #[cfg(target_os = "windows")]
+    let child = Command::new("cmd")
+        .args(["/c", "mvnw.cmd", "spring-boot:run"])
+        .current_dir(&backend_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start backend: {}", e))?;
+
+    #[cfg(not(target_os = "windows"))]
     let child = Command::new("./mvnw")
         .arg("spring-boot:run")
         .current_dir(&backend_dir)
@@ -276,6 +285,46 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .manage(BackendState {
             process: Mutex::new(None),
+        })
+        .setup(|app| {
+            let backend_state = app.state::<BackendState>();
+            let mut process_guard = backend_state.process.lock().unwrap();
+            
+            // Get backend directory
+            let exe_path = std::env::current_exe().unwrap();
+            let backend_dir = exe_path
+                .parent()
+                .and_then(|p| p.parent())
+                .and_then(|p| p.parent())
+                .and_then(|p| p.parent())
+                .unwrap()
+                .to_path_buf();
+            
+            // Start backend
+            #[cfg(target_os = "windows")]
+            let child = Command::new("cmd")
+                .args(["/c", "mvnw.cmd", "spring-boot:run"])
+                .current_dir(&backend_dir)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn();
+            
+            #[cfg(not(target_os = "windows"))]
+            let child = Command::new("./mvnw")
+                .arg("spring-boot:run")
+                .current_dir(&backend_dir)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn();
+            
+            if let Ok(child) = child {
+                *process_guard = Some(child);
+                println!("Backend started automatically");
+            } else {
+                eprintln!("Failed to start backend automatically");
+            }
+            
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             // File system

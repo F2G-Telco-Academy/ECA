@@ -58,51 +58,51 @@ A professional cellular network analyzer that captures UE baseband logs, convert
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Java 21+**
-- **Node.js 18+**
-- **Python 3.8+**
-- **ADB** (Android Debug Bridge)
-- **TShark** (Wireshark CLI)
+- **Java 21+** (for Spring Boot backend)
+- **Node.js 18+** (for Next.js frontend)
+- **Rust & Cargo** (for Tauri desktop app)
+- **Python 3.8+** (for SCAT log processing)
+- **ADB** (Android Debug Bridge - for device detection)
+- **Maven** (included via wrapper)
 
-### Installation
+### One-Command Installation
 
 ```bash
 # Clone repository
 git clone git@github.com:F2G-Telco-Academy/ECA.git
 cd ECA
 
-# Install Python dependencies
+# Install all dependencies
 pip install -r scat/requirements.txt
-
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
+cd frontend && npm install && cd ..
+mvnw.cmd clean install -DskipTests
 ```
 
 ### Running the Application
 
-**Option 1: One-Command Startup**
-```bash
-./start-and-test.sh
-```
-
-**Option 2: Manual Startup**
-```bash
-# Terminal 1: Backend
-./mvnw spring-boot:run
-
-# Terminal 2: Frontend
-cd frontend && npm run dev
-```
-
-**Option 3: Tauri Desktop App**
+**🎯 Recommended: Tauri Desktop App (All-in-One)**
 ```bash
 cd frontend
 npm run tauri:dev
 ```
 
-Access the application at `http://localhost:3000`
+**What happens:**
+- ✅ Automatically starts Spring Boot backend (port 8080)
+- ✅ Launches Next.js dev server (port 3001)
+- ✅ Opens Tauri desktop window
+- ✅ Detects connected devices via ADB
+- ✅ Seamless IPC communication between components
+
+**Alternative: Manual Startup**
+```bash
+# Terminal 1: Backend
+mvnw.cmd spring-boot:run
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+Access web version at `http://localhost:3001`
 
 ---
 
@@ -495,6 +495,26 @@ Proprietary - Extended Cellular Analyzer
 
 ---
 
+## 🔧 Tauri Integration
+
+### Automatic Backend Startup
+Tauri automatically starts the Spring Boot backend on launch via the `setup` hook:
+- Detects backend directory relative to executable
+- Spawns Maven process with `spring-boot:run`
+- Manages backend lifecycle (start/stop)
+
+### IPC Commands
+- `list_adb_devices` - Get connected devices via ADB
+- `start_backend` - Manually start backend
+- `stop_backend` - Stop backend process
+- `check_backend_status` - Health check
+- `execute_adb_command` - Run ADB commands
+
+### Fallback Device Detection
+If backend is unavailable, Tauri IPC provides direct ADB access for device detection.
+
+---
+
 **Version:** 0.1.0  
-**Last Updated:** 2025-12-07  
+**Last Updated:** 2025-12-11  
 **Status:** Production Ready ✅

@@ -33,7 +33,10 @@ public class DeviceDetectorService {
         return Mono.fromCallable(() -> {
             List<String> devices = new ArrayList<>();
             try {
-                String adbPath = PlatformUtils.resolveAdbPath(toolsConfig.getTools().getAdb().getPath());
+                String adbPath = toolsConfig.getTools().getAdb().getPath();
+                if (adbPath == null || adbPath.isEmpty()) {
+                    adbPath = "adb";
+                }
                 Process process = new ProcessBuilder(adbPath, "devices").start();
 
                 BufferedReader reader = new BufferedReader(
@@ -65,8 +68,12 @@ public class DeviceDetectorService {
     public Mono<String> getDeviceModel(String deviceId) {
         return Mono.fromCallable(() -> {
             try {
+                String adbPath = toolsConfig.getTools().getAdb().getPath();
+                if (adbPath == null || adbPath.isEmpty()) {
+                    adbPath = "adb";
+                }
                 Process process = new ProcessBuilder(
-                        toolsConfig.getTools().getAdb().getPath(),
+                        adbPath,
                         "-s", deviceId, "shell", "getprop", "ro.product.model")
                         .start();
 
@@ -85,8 +92,12 @@ public class DeviceDetectorService {
     public Mono<String> getDeviceFirmware(String deviceId) {
         return Mono.fromCallable(() -> {
             try {
+                String adbPath = toolsConfig.getTools().getAdb().getPath();
+                if (adbPath == null || adbPath.isEmpty()) {
+                    adbPath = "adb";
+                }
                 Process process = new ProcessBuilder(
-                        toolsConfig.getTools().getAdb().getPath(),
+                        adbPath,
                         "-s", deviceId, "shell", "getprop", "ro.build.version.release")
                         .start();
 
@@ -131,8 +142,12 @@ public class DeviceDetectorService {
     private Mono<String> getDeviceManufacturer(String deviceId) {
         return Mono.fromCallable(() -> {
             try {
+                String adbPath = toolsConfig.getTools().getAdb().getPath();
+                if (adbPath == null || adbPath.isEmpty()) {
+                    adbPath = "adb";
+                }
                 Process process = new ProcessBuilder(
-                        toolsConfig.getTools().getAdb().getPath(),
+                        adbPath,
                         "-s", deviceId, "shell", "getprop", "ro.product.manufacturer")
                         .start();
 
