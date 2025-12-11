@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/utils/api'
 
-export default function XCALRFSummary({ sessionId }: { sessionId: string | null }) {
+export default function RFSummary({ sessionId }: { sessionId: string | null }) {
   const [data, setData] = useState<any>({})
   const [activeTab, setActiveTab] = useState<'LTE' | '5GNR'>('5GNR')
 

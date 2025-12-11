@@ -8,7 +8,7 @@ interface SidebarProps {
   onViewSelect: (view: string) => void
 }
 
-export default function Sidebar({ onDeviceSelect, onKpiSelect, onViewSelect }: SidebarProps) {
+export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSelect }: SidebarProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
   const [expanded, setExpanded] = useState<Record<string, boolean>>({

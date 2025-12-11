@@ -90,7 +90,7 @@ export default function EnhancedSidebar({ onDeviceSelect, onKpiSelect }: Enhance
       'CDMA-Statistics': [],
       'CDMA-Status': []
     },
-    'XCAL_Smart': [
+    'Smart_App': [
       'Smart App Message List'
     ],
     'Autocall KPI': []

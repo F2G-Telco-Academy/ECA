@@ -9,7 +9,7 @@ interface LogEntry {
   details?: any
 }
 
-export default function XCALTerminalViewer({ sessionId }: { sessionId: string | null }) {
+export default function TerminalViewer({ sessionId }: { sessionId: string | null }) {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null)
   const [isPaused, setIsPaused] = useState(false)

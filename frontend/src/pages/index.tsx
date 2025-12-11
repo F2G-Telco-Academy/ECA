@@ -459,7 +459,7 @@ export default function LegacyHome() {
                   )}
                 </div>
 
-                {/* Smart App (NO XCAL BRANDING) */}
+                {/* Smart App (Smart App Features) */}
                 <div>
                   <button
                     onClick={() => toggleKpi('smartapp')}

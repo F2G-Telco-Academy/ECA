@@ -11,7 +11,7 @@ interface SignalingMessage {
   jsonData?: any
 }
 
-export default function XCALSignalingViewer({ sessionId }: { sessionId: string | null }) {
+export default function SignalingViewer({ sessionId }: { sessionId: string | null }) {
   const [messages, setMessages] = useState<SignalingMessage[]>([])
   const [selectedMessage, setSelectedMessage] = useState<SignalingMessage | null>(null)
   const [isPaused, setIsPaused] = useState(false)

@@ -22,7 +22,7 @@ export default function UserDefinedTable({ sessionId }: { sessionId: string | nu
   const [timestamp, setTimestamp] = useState('')
 
   useEffect(() => {
-    // Initialize tree structure matching xcal
+    // Initialize tree structure matching analyzer
     const initialTree: TreeNode[] = [
       {
         id: 'qualcomm',

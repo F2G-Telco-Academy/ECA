@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import XCALRFSummary from './XCALRFSummary'
-import XCALSignalingViewer from './XCALSignalingViewer'
+import RFSummary from './RFSummary'
+import SignalingViewer from './SignalingViewer'
 import TabulatedKPIView from './TabulatedKPIView'
 import UserDefinedTable from './UserDefinedTable'
-import XCALGraphView from './XCALGraphView'
-import XCALTerminalViewer from './XCALTerminalViewer'
-import XCALQualcommViewer from './XCALQualcommViewer'
+import GraphView from './GraphView'
+import TerminalViewer from './TerminalViewer'
+import QualcommViewer from './QualcommViewer'
 import MapView from './MapView'
 
 type PanelContent = 'none' | 'rf-summary' | 'signaling' | 'tabulated' | 'user-table' | 'graph' | 'terminal' | 'qualcomm' | 'map'
@@ -16,7 +16,7 @@ interface Panel {
   kpiType?: string
 }
 
-export default function XCALMultiPanelGrid({ sessionId }: { sessionId: string | null }) {
+export default function MultiPanelGrid({ sessionId }: { sessionId: string | null }) {
   const [layout, setLayout] = useState<'1x1' | '1x2' | '2x2' | '1x4' | '2x4'>('1x4')
   const [panels, setPanels] = useState<Panel[]>([
     { id: 1, content: 'none' },
@@ -41,19 +41,19 @@ export default function XCALMultiPanelGrid({ sessionId }: { sessionId: string | 
 
     switch (panel.content) {
       case 'rf-summary':
-        return <XCALRFSummary sessionId={sessionId} />
+        return <RFSummary sessionId={sessionId} />
       case 'signaling':
-        return <XCALSignalingViewer sessionId={sessionId} />
+        return <SignalingViewer sessionId={sessionId} />
       case 'tabulated':
         return <TabulatedKPIView sessionId={sessionId} kpiType={panel.kpiType || 'General'} />
       case 'user-table':
         return <UserDefinedTable sessionId={sessionId} />
       case 'graph':
-        return <XCALGraphView sessionId={sessionId} />
+        return <GraphView sessionId={sessionId} />
       case 'terminal':
-        return <XCALTerminalViewer sessionId={sessionId} />
+        return <TerminalViewer sessionId={sessionId} />
       case 'qualcomm':
-        return <XCALQualcommViewer sessionId={sessionId} />
+        return <QualcommViewer sessionId={sessionId} />
       case 'map':
         return <MapView sessionId={sessionId} />
       default:

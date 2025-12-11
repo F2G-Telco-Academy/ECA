@@ -7,7 +7,7 @@ interface QualcommMessage {
   details: any
 }
 
-export default function XCALQualcommViewer({ sessionId }: { sessionId: string | null }) {
+export default function QualcommViewer({ sessionId }: { sessionId: string | null }) {
   const [messages, setMessages] = useState<QualcommMessage[]>([])
   const [selectedMessage, setSelectedMessage] = useState<QualcommMessage | null>(null)
   const [isPaused, setIsPaused] = useState(false)

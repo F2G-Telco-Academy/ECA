@@ -9,7 +9,7 @@ interface TreeNode {
   color?: string
 }
 
-export default function XCALGraphView({ sessionId }: { sessionId: string | null }) {
+export default function GraphView({ sessionId }: { sessionId: string | null }) {
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['qualcomm', '5gnr-q', 'serving-cell']))
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['nr_serv_filtered_bf'])

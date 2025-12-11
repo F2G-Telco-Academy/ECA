@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import Sidebar from '@/components/Sidebar'
+import AnalyzerSidebar from '@/components/AnalyzerSidebar'
 import RFSummary from '@/components/RFSummary'
 import SignalingViewer from '@/components/SignalingViewer'
 import TabulatedKPIView from '@/components/TabulatedKPIView'
@@ -191,7 +191,7 @@ export default function AnalyzerInterface() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Fixed Left Sidebar */}
-        <Sidebar
+        <AnalyzerSidebar
           onDeviceSelect={setSelectedDevices}
           onKpiSelect={(kpi) => console.log('KPI:', kpi)}
           onViewSelect={handleViewSelect}
