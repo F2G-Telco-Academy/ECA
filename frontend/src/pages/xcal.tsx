@@ -6,13 +6,17 @@ import TabulatedKPIView from '@/components/TabulatedKPIView'
 import UserDefinedTable from '@/components/UserDefinedTable'
 import MultiDeviceGrid from '@/components/MultiDeviceGrid'
 import MapView from '@/components/MapView'
+import XCALGraphView from '@/components/XCALGraphView'
+import XCALTerminalViewer from '@/components/XCALTerminalViewer'
+import XCALQualcommViewer from '@/components/XCALQualcommViewer'
+import XCALMultiPanelGrid from '@/components/XCALMultiPanelGrid'
 import { api } from '@/utils/api'
 import type { Device } from '@/types'
 
 interface Tab {
   id: string
   title: string
-  type: 'grid' | 'rf-summary' | 'signaling' | 'tabulated' | 'user-table' | 'graph' | 'map'
+  type: 'grid' | 'rf-summary' | 'signaling' | 'tabulated' | 'user-table' | 'graph' | 'map' | 'terminal' | 'qualcomm' | 'multi-panel'
   kpiType?: string
 }
 
@@ -21,7 +25,7 @@ export default function XCALInterface() {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
   const [currentSession, setCurrentSession] = useState<any>(null)
   const [tabs, setTabs] = useState<Tab[]>([
-    { id: '1', title: 'Devices List', type: 'grid' }
+    { id: '1', title: 'Multi-Panel View', type: 'multi-panel' }
   ])
   const [activeTabId, setActiveTabId] = useState('1')
 
@@ -40,7 +44,6 @@ export default function XCALInterface() {
   }, [])
 
   const handleViewSelect = (viewName: string) => {
-    // Map view names to tab types
     const viewTypeMap: Record<string, { type: Tab['type'], kpiType?: string }> = {
       'RF Measurement Summary Info': { type: 'rf-summary' },
       'NRDC RF Measurement Summary Info': { type: 'rf-summary' },
@@ -50,19 +53,21 @@ export default function XCALInterface() {
       '5GNR Handover Statistics (intra NR-HO)': { type: 'tabulated', kpiType: '5GNR Handover Statistics' },
       'User Defined Table': { type: 'user-table' },
       'User Defined Graph': { type: 'graph' },
-      'Map View': { type: 'map' }
+      'Map View': { type: 'map' },
+      'Qualcomm DM Message': { type: 'qualcomm' },
+      'Qualcomm Mobile Message': { type: 'qualcomm' },
+      'Terminal Logs': { type: 'terminal' },
+      'Log Streaming': { type: 'terminal' }
     }
 
     const viewConfig = viewTypeMap[viewName] || { type: 'tabulated', kpiType: viewName }
     
-    // Check if tab already exists
     const existingTab = tabs.find(t => t.title === viewName)
     if (existingTab) {
       setActiveTabId(existingTab.id)
       return
     }
 
-    // Create new tab
     const newTab: Tab = {
       id: Date.now().toString(),
       title: viewName,
@@ -92,6 +97,8 @@ export default function XCALInterface() {
     const sessionId = currentSession?.id?.toString() || selectedDevices[0] || '1'
 
     switch (tab.type) {
+      case 'multi-panel':
+        return <XCALMultiPanelGrid sessionId={sessionId} />
       case 'grid':
         return <MultiDeviceGrid devices={devices} onDeviceSelect={(id) => setSelectedDevices([id])} />
       case 'rf-summary':
@@ -105,7 +112,11 @@ export default function XCALInterface() {
       case 'map':
         return <MapView sessionId={sessionId} />
       case 'graph':
-        return <div className="h-full bg-gray-900 text-white flex items-center justify-center">Graph View - Coming Soon</div>
+        return <XCALGraphView sessionId={sessionId} />
+      case 'terminal':
+        return <XCALTerminalViewer sessionId={sessionId} />
+      case 'qualcomm':
+        return <XCALQualcommViewer sessionId={sessionId} />
       default:
         return <div className="h-full flex items-center justify-center text-gray-400">Select a view from sidebar</div>
     }

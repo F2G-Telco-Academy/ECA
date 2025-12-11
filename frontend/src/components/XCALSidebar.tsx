@@ -21,6 +21,7 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
     lte: false,
     nas: false,
     rfkpi: true,
+    userdefined: false,
     qualcomm: false,
     qualcommMsg: false,
     '5gnrq': false,
@@ -28,6 +29,8 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
     wcdma: false,
     cdma: false,
     xcalsmart: false,
+    autocallkpi: false
+  })
     autocallkpi: false
   })
   const [search, setSearch] = useState('')
@@ -129,7 +132,7 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
           </div>
           {expanded.message && (
             <div>
-              {['LBS Message', 'LCS Message', 'PPP Frame/Mobile Packet Message', 'AirPcap Message', 'HTTP / SIP Message', 'H.324m Message Viewer'].map(item => (
+              {['Signaling Message', 'Terminal Logs', 'LBS Message', 'LCS Message', 'PPP Frame/Mobile Packet Message', 'AirPcap Message', 'HTTP / SIP Message', 'H.324m Message Viewer'].map(item => (
                 <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
               ))}
             </div>
@@ -186,6 +189,21 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
           {expanded.rfkpi && (
             <div>
               {['RF Measurement Summary Info', 'NRDC RF Measurement Summary Info', '5GNR Beamforming Information', 'Benchmarking RF Summary', 'Dynamic Spectrum Sharing'].map(item => (
+                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* User Defined */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('userdefined')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.userdefined ? '▼' : '▶'}</span>
+            <span className="font-semibold">User Defined</span>
+          </div>
+          {expanded.userdefined && (
+            <div>
+              {['User Defined Table', 'User Defined Graph'].map(item => (
                 <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
               ))}
             </div>
