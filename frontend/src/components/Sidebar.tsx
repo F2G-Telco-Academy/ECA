@@ -25,6 +25,7 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
 
   const panelBg = 'bg-black text-gray-100 border-gray-800'
   const itemHover = 'hover:bg-gray-900'
+  const slots = [0, 1, 2, 3] // four placeholders
 
   return (
     <div className={`w-64 flex flex-col h-full border-r ${panelBg}`}>
@@ -35,26 +36,44 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
 
       <div className="flex-1 overflow-auto px-3 py-2">
         <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Device Manager</div>
-        <div className="space-y-1 mb-4">
-          {devices.length === 0 && <div className="text-gray-500 text-xs px-2 py-1">No device connected</div>}
-          {devices.map((d, idx) => (
-            <button
-              key={d.deviceId}
-              onClick={() => onDeviceSelect(d.deviceId)}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded border border-transparent ${
-                selectedDevice === d.deviceId ? 'bg-slate-800 text-white' : `${itemHover} text-gray-200`
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500" />
-                <div className="flex flex-col text-left leading-tight">
-                  <span>Mobile {idx + 1}</span>
-                  <span className="text-[11px] text-gray-300">{d.model || d.manufacturer || d.deviceId}</span>
+        <div className="space-y-2 mb-4">
+          {slots.map((slotIdx) => {
+            const device = devices[slotIdx]
+            const isConnected = !!device
+            const active = isConnected && selectedDevice === device.deviceId
+            return (
+              <button
+                key={slotIdx}
+                onClick={() => {
+                  if (device) onDeviceSelect(device.deviceId)
+                }}
+                className={`w-full flex items-center justify-between px-3 py-3 text-sm rounded border ${
+                  active
+                    ? 'bg-slate-800 text-white border-slate-700'
+                    : isConnected
+                      ? 'bg-slate-900 text-gray-200 border-slate-800 hover:bg-slate-800'
+                      : 'bg-gray-900 text-gray-400 border-gray-800 cursor-default'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isConnected ? 'bg-green-500' : 'bg-gray-500'
+                    }`}
+                  />
+                  <div className="flex flex-col text-left leading-tight">
+                    <span>Mobile {slotIdx + 1}</span>
+                    <span className="text-[11px] text-gray-300">
+                      {isConnected ? device.model || device.deviceId : 'Not connected'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <span className="text-[11px] text-gray-400 capitalize">{d.status?.toLowerCase?.() || ''}</span>
-            </button>
-          ))}
+                <span className="text-[11px] text-gray-400 capitalize">
+                  {isConnected ? device.status?.toLowerCase?.() || 'connected' : ''}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         <div className="space-y-3">
