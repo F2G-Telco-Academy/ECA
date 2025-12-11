@@ -279,6 +279,10 @@ export const api = {
     return new EventSource(`${API_BASE}/sessions/${sessionId}/logs`)
   },
 
+  createSignalingStream(sessionId: string | number): EventSource {
+    return new EventSource(`${API_BASE}/sessions/${sessionId}/signaling`)
+  },
+
   // ========== ANALYTICS APIs ==========
 
   // Throughput Analysis

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -55,17 +56,22 @@ public class CaptureOrchestrationService {
                             "Device not in diagnostic mode. " + diagResult.getInstructions()));
                     }
                     log.info("Device in diagnostic mode: {}", diagResult.getUsbAddress());
-                    return sessionService.createSession(deviceId);
-                })
-                .flatMap(session -> {
-                    log.info("Starting capture for session {}", session.getId());
-                    return startScatCapture(session)
-                            .then(sessionService.updateSessionStatus(session.getId(), SessionStatus.CAPTURING))
-                            .thenReturn(session);
+                    return sessionService.createSession(deviceId)
+                            .flatMap(session -> {
+                                log.info("Starting capture for session {}", session.getId());
+                                return startScatCapture(session, diagResult.getUsbAddress())
+                                        .onErrorResume(error -> {
+                                            log.error("Failed to start capture for session {}", session.getId(), error);
+                                            return sessionService.updateSessionStatus(session.getId(), SessionStatus.FAILED)
+                                                    .then(Mono.error(error));
+                                        })
+                                        .then(sessionService.updateSessionStatus(session.getId(), SessionStatus.CAPTURING))
+                                        .thenReturn(session);
+                            });
                 });
     }
 
-    private Mono<ProcessHandle> startScatCapture(Session session) {
+    private Mono<ProcessHandle> startScatCapture(Session session, String preferredComPort) {
         Path sessionDir = Paths.get(session.getSessionDir());
         Path pcapOutput = sessionDir.resolve("capture.pcap");
         
@@ -85,10 +91,10 @@ public class CaptureOrchestrationService {
         // Detect COM ports on Windows, use USB on Linux
         List<String> args;
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            List<String> comPorts = detectComPorts();
-            if (!comPorts.isEmpty()) {
-                String comPort = comPorts.get(0);
-                log.info("Found {} COM port(s), using: {}", comPorts.size(), comPort);
+            String comPort = selectAvailableComPort(pythonCmd, preferredComPort);
+
+            if (comPort != null) {
+                log.info("Using COM port {}", comPort);
                 args = List.of(
                     "-m", "scat.main",
                     "-t", toolsConfig.getTools().getScat().getType(),
@@ -97,7 +103,7 @@ public class CaptureOrchestrationService {
                     "--pcap-file", pcapOutput.toString()
                 );
             } else {
-                log.warn("No COM ports found, using USB mode");
+                log.warn("No usable COM ports found, falling back to USB mode");
                 args = List.of(
                     "-m", "scat.main",
                     "-t", toolsConfig.getTools().getScat().getType(),
@@ -266,7 +272,7 @@ public class CaptureOrchestrationService {
      * Extracts KPIs every 5 seconds and emits to frontend
      */
     private void startRealtimeKpiStreaming(Long sessionId, Path pcapFile) {
-        log.info("🔄 Starting real-time KPI streaming for session {}", sessionId);
+        log.info("Starting real-time KPI streaming for session {}", sessionId);
         
         reactor.core.Disposable disposable = Flux.interval(java.time.Duration.ofSeconds(5))
             .flatMap(tick -> {
@@ -303,7 +309,8 @@ public class CaptureOrchestrationService {
             ProcessBuilder pb = new ProcessBuilder(pythonCmd, "-c",
                 "import serial.tools.list_ports; " +
                 "[print(p.device) for p in serial.tools.list_ports.comports() " +
-                "if p.vid == 0x05C6 and p.pid in [0x90B8, 0x90DB]]"
+                // Qualcomm diag PIDs: 0x90B8 (diag), 0x90DB (diag), 0x90E5 (MSM diag)
+                "if p.vid == 0x05C6 and p.pid in [0x90B8, 0x90DB, 0x90E5]]"
             );
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -322,5 +329,52 @@ public class CaptureOrchestrationService {
             log.debug("COM port detection failed (pyserial not installed?)", e);
         }
         return comPorts;
+    }
+
+    private String selectAvailableComPort(String pythonCmd, String preferredComPort) {
+        List<String> comPorts = detectComPorts();
+
+        if (preferredComPort != null && !preferredComPort.isBlank()) {
+            comPorts.remove(preferredComPort);
+            comPorts.add(0, preferredComPort);
+        }
+
+        for (String port : comPorts) {
+            if (canOpenPort(pythonCmd, port)) {
+                return port;
+            }
+        }
+        // Si aucun port n'a pu être testé avec succès, tente quand même le préféré ou le premier détecté
+        if (preferredComPort != null && !preferredComPort.isBlank()) {
+            log.warn("Using preferred COM port {} even though availability check failed", preferredComPort);
+            return preferredComPort;
+        }
+        if (!comPorts.isEmpty()) {
+            log.warn("Using first detected COM port {} even though availability check failed", comPorts.get(0));
+            return comPorts.get(0);
+        }
+        return null;
+    }
+
+    private boolean canOpenPort(String pythonCmd, String port) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                pythonCmd,
+                "-c",
+                "import serial,sys; p=sys.argv[1]; ser=serial.Serial(p, baudrate=115200, timeout=0.5); ser.close()",
+                port
+            );
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            boolean finished = process.waitFor(3, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                return false;
+            }
+            return process.exitValue() == 0;
+        } catch (Exception e) {
+            log.warn("COM port {} not available: {}", port, e.getMessage());
+            return false;
+        }
     }
 }
