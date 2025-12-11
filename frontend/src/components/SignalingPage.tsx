@@ -10,8 +10,14 @@ interface Message {
   ueNet: "UL" | "DL"
   channel: string
   message: string
-  direction: "↑ UL" | "↓ DL"
+  direction: "UL" | "DL"
   details: string
+}
+
+interface Toast {
+  id: number
+  text: string
+  tone: "success" | "error"
 }
 
 interface Props {
@@ -38,7 +44,11 @@ export default function SignalingPage({
   const [autoScroll, setAutoScroll] = useState(true)
   const [search, setSearch] = useState("")
   const [captureStartTs, setCaptureStartTs] = useState<number | null>(null)
-  const [lastComPort, setLastComPort] = useState<string>("Auto (diag)")
+  const [lastComPort, setLastComPort] = useState<string>("Auto")
+  const [directionFilter, setDirectionFilter] = useState<"ALL" | "UL" | "DL">("ALL")
+  const [protocolFilter, setProtocolFilter] = useState<"ALL" | "RRC" | "NAS">("ALL")
+  const [fullscreenTable, setFullscreenTable] = useState(false)
+  const [toasts, setToasts] = useState<Toast[]>([])
   const tableRef = useRef<HTMLDivElement>(null)
   const streamRef = useRef<EventSource | null>(null)
 
@@ -46,7 +56,6 @@ export default function SignalingPage({
     ? devices.some((d) => d.deviceId === selectedDevice && d.connected !== false)
     : false
 
-  // Stop capture if the selected device is no longer connected
   useEffect(() => {
     if (selectedDevice && !deviceConnected && capturing) {
       setCapturing(false)
@@ -54,7 +63,6 @@ export default function SignalingPage({
     }
   }, [selectedDevice, deviceConnected, capturing])
 
-  // Open SSE stream when sessionId/capture is active
   useEffect(() => {
     if (sessionId && capturing && deviceConnected) {
       streamRef.current?.close()
@@ -69,7 +77,7 @@ export default function SignalingPage({
             ueNet: (data.direction as "UL" | "DL") || "DL",
             channel: data.layer || data.protocol || "N/A",
             message: data.messageType || data.protocol || "Unknown",
-            direction: data.direction === "UL" ? "↑ UL" : "↓ DL",
+            direction: data.direction === "UL" ? "UL" : "DL",
             details: data.decodedData || data.hexData || JSON.stringify(data.payloadJson || {}, null, 2),
           }
           setMessages((prev) => {
@@ -137,6 +145,14 @@ export default function SignalingPage({
 
   const filteredMessages = messages
     .filter(matchesCategory)
+    .filter((m) => (directionFilter === "ALL" ? true : m.ueNet === directionFilter))
+    .filter((m) => {
+      if (protocolFilter === "ALL") return true
+      const lowerMsg = m.message.toLowerCase()
+      if (protocolFilter === "RRC") return lowerMsg.includes("rrc")
+      if (protocolFilter === "NAS") return lowerMsg.includes("nas")
+      return true
+    })
     .filter((m) => {
       const s = search.trim().toLowerCase()
       if (!s) return true
@@ -160,6 +176,12 @@ export default function SignalingPage({
     a.click()
   }
 
+  const pushToast = (text: string, tone: "success" | "error") => {
+    const id = Date.now()
+    setToasts((prev) => [...prev, { id, text, tone }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000)
+  }
+
   const handleStartCapture = async () => {
     if (!selectedDevice || !deviceConnected) return
     setCapturing(true)
@@ -170,14 +192,15 @@ export default function SignalingPage({
       setSessionId(session.id as number)
       setCaptureStartTs(Date.now())
       if (session.sessionDir) {
-        const match = session.sessionDir.match(/COM(\\d+)/i)
+        const match = session.sessionDir.match(/COM(\d+)/i)
         if (match?.[1]) {
           setLastComPort(`COM${match[1]}`)
         }
       }
+      pushToast("Capture started", "success")
     } catch (err: any) {
       setCapturing(false)
-      alert(err?.message || "Failed to start capture")
+      pushToast(err?.message || "Failed to start capture", "error")
     }
   }
 
@@ -190,6 +213,7 @@ export default function SignalingPage({
     setCapturing(false)
     streamRef.current?.close()
     setCaptureStartTs(null)
+    pushToast("Capture stopped", "success")
   }
 
   const handleRestartCapture = async () => {
@@ -237,7 +261,7 @@ export default function SignalingPage({
       <div className="flex-1 flex flex-col">
         <div className={`px-4 sm:px-6 py-4 border-b ${headerBg}`}>
           <h1 className="text-lg font-semibold">Live Signaling Messages</h1>
-          <p className="text-sm text-gray-500">Select a device to view its signaling messages in real time.</p>
+          <p className="text-sm text-gray-500">Sélectionnez un device et démarrez la capture.</p>
         </div>
 
         <div className={`px-4 sm:px-6 py-3 border-b flex flex-wrap items-center gap-3 ${headerBg}`}>
@@ -249,6 +273,7 @@ export default function SignalingPage({
             {(devices || []).map((d, idx) => (
               <button
                 key={d.deviceId}
+                title={`Port diag: ${lastComPort}`}
                 onClick={() => onSelectDevice(d.deviceId)}
                 className={`px-3 py-1.5 rounded border text-xs whitespace-nowrap flex items-center gap-2 ${
                   selectedDevice === d.deviceId
@@ -256,12 +281,27 @@ export default function SignalingPage({
                     : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-green-500" />
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    d.connected ? "bg-green-500" : d.status?.toLowerCase().includes("ready") ? "bg-amber-400" : "bg-red-400"
+                  }`}
+                />
                 <span className="text-left leading-tight">
-                  <div>{`Mobile ${idx + 1}`}</div>
-                  <div className="text-[11px] text-gray-500">{d.model || d.manufacturer || d.deviceId}</div>
+                  <div className="font-semibold">{d.model || `Mobile ${idx + 1}`}</div>
+                  <div className="text-[11px] text-gray-500">{d.deviceId}</div>
                 </span>
                 <span className="text-[11px] text-gray-400">{d.status?.toLowerCase?.()}</span>
+                <button
+                  type="button"
+                  className="ml-1 px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const others = devices.filter((x) => x.deviceId !== d.deviceId)
+                    if (others[0]) onSelectDevice(others[0].deviceId)
+                  }}
+                >
+                  Swap
+                </button>
               </button>
             ))}
           </div>
@@ -283,7 +323,7 @@ export default function SignalingPage({
           <button
             className={`px-4 py-2 rounded border text-sm ${
               selectedDevice && deviceConnected
-                ? "bg-white border-gray-300 hover:border-gray-400"
+                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                 : "bg-gray-100 border-gray-200 text-gray-400"
             }`}
             disabled={!selectedDevice || !deviceConnected}
@@ -293,7 +333,7 @@ export default function SignalingPage({
           </button>
           <button
             className={`px-4 py-2 rounded border text-sm ${
-              capturing ? "bg-white border-gray-300 hover:border-gray-400" : "bg-gray-100 border-gray-200 text-gray-400"
+              capturing ? "bg-red-100 text-red-700 border-red-200 hover:bg-red-200" : "bg-gray-100 border-gray-200 text-gray-400"
             }`}
             disabled={!capturing}
             onClick={handleStopCapture}
@@ -306,54 +346,69 @@ export default function SignalingPage({
         </div>
 
         {!selectedDevice ? (
-          <EmptyState title="Select a device to start" subtitle="Choose one of the connected mobiles above" />
+          <EmptyState title="Select a device to start" subtitle="1) Brancher en diag 2) Cliquer Start Capture" />
         ) : (
           <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col border-r border-gray-200">
               <div className={`flex flex-wrap items-center gap-3 px-4 py-2 text-xs text-gray-700 border-b ${toolbarBg}`}>
-                <span
-                  className={`px-2 py-1 rounded-full font-semibold ${
-                    capturing ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                  }`}
-                >
+                <span className={`px-2 py-1 rounded-full font-semibold ${capturing ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                   {capturing ? "Capturing" : "Idle"}
                 </span>
                 <span>Device: {selectedDevice || "None"}</span>
                 <span>Port: {lastComPort}</span>
                 <span>Durée: {formatDuration(captureStartTs)}</span>
                 <span>Packets: {messages.length}</span>
+                <select
+                  className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
+                  value={directionFilter}
+                  onChange={(e) => setDirectionFilter(e.target.value as any)}
+                >
+                  <option value="ALL">All dir</option>
+                  <option value="UL">UL</option>
+                  <option value="DL">DL</option>
+                </select>
+                <select
+                  className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
+                  value={protocolFilter}
+                  onChange={(e) => setProtocolFilter(e.target.value as any)}
+                >
+                  <option value="ALL">All proto</option>
+                  <option value="RRC">RRC</option>
+                  <option value="NAS">NAS</option>
+                </select>
                 <div className="flex items-center gap-2 ml-auto">
-                  <button
-                    className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
-                    onClick={handleRestartCapture}
-                  >
+                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={handleRestartCapture}>
                     Restart capture
                   </button>
-                  <button
-                    className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
-                    onClick={() => setCapturing((v) => !v)}
-                  >
+                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={() => setCapturing((v) => !v)}>
                     {capturing ? "Pause" : "Resume"}
                   </button>
                   <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={exportCapture}>
                     Export
                   </button>
-                  <button
-                    className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
-                    onClick={() => setMessages([])}
-                  >
+                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={() => setMessages([])}>
                     Clear
                   </button>
-                  <button
-                    className={`px-3 py-1 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`}
-                    onClick={() => setAutoScroll(!autoScroll)}
-                  >
+                  <button className={`px-3 py-1 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`} onClick={() => setAutoScroll(!autoScroll)}>
                     Auto Scroll
                   </button>
                 </div>
               </div>
 
-              <div ref={tableRef} className="flex-1 overflow-auto bg-white max-h-[720px]">
+              <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500">
+                <span>Table</span>
+                <button
+                  className="px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100"
+                  onClick={() => setFullscreenTable(true)}
+                >
+                  Fullscreen
+                </button>
+              </div>
+
+              <div
+                ref={tableRef}
+                className={`flex-1 overflow-auto bg-white max-h-[720px] ${fullscreenTable ? "fixed inset-4 z-50 border shadow-lg" : ""}`}
+              >
                 {filteredMessages.length === 0 ? (
                   capturing ? (
                     <div className="grid grid-cols-1 gap-2 p-4">
@@ -362,7 +417,7 @@ export default function SignalingPage({
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="No messages yet" subtitle="Click Resume to start capture" />
+                    <EmptyState title="No messages yet" subtitle="Brancher en diag puis Start Capture" />
                   )
                 ) : (
                   <div className="overflow-auto">
@@ -439,6 +494,17 @@ export default function SignalingPage({
             </div>
           </div>
         )}
+      </div>
+
+      <div className="fixed bottom-4 right-4 space-y-2">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`px-3 py-2 rounded shadow text-sm ${t.tone === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}
+          >
+            {t.text}
+          </div>
+        ))}
       </div>
     </div>
   )
