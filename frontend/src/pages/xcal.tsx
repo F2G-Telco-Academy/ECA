@@ -2,146 +2,108 @@ import { useState, useEffect } from 'react'
 import XCALSidebar from '@/components/XCALSidebar'
 import XCALRFSummary from '@/components/XCALRFSummary'
 import XCALSignalingViewer from '@/components/XCALSignalingViewer'
-import XCALGraphView from '@/components/XCALGraphView'
-import UserDefinedTable from '@/components/UserDefinedTable'
 import TabulatedKPIView from '@/components/TabulatedKPIView'
+import UserDefinedTable from '@/components/UserDefinedTable'
 import MultiDeviceGrid from '@/components/MultiDeviceGrid'
-import MapView from '@/components/MapView'
-import SessionControlPanel from '@/components/SessionControlPanel'
-import EnhancedTerminalV2 from '@/components/EnhancedTerminalV2'
 import { api } from '@/utils/api'
 import type { Device } from '@/types'
+
+interface Tab {
+  id: string
+  title: string
+  type: 'grid' | 'rf-summary' | 'signaling' | 'tabulated' | 'user-table' | 'graph'
+  kpiType?: string
+}
 
 export default function XCALInterface() {
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
   const [currentSession, setCurrentSession] = useState<any>(null)
-  const [tabs, setTabs] = useState<Array<{ id: string; title: string; view: string; kpiType?: string }>>([
-    { id: '1', title: 'Devices List', view: 'grid' }
+  const [tabs, setTabs] = useState<Tab[]>([
+    { id: '1', title: 'Devices List', type: 'grid' }
   ])
-  const [activeTab, setActiveTab] = useState('1')
-  const [systemStats, setSystemStats] = useState({
-    gps: 'No GPS',
-    logging: 'Not Logging',
-    cpu: '0%',
-    memory: '0%'
-  })
+  const [activeTabId, setActiveTabId] = useState('1')
 
   useEffect(() => {
     const fetchDevices = async () => {
       try {
         const devs = await api.getDevices()
         setDevices(devs)
-        
-        // Update system stats
-        setSystemStats(prev => ({
-          ...prev,
-          logging: currentSession ? 'Logging' : 'Not Logging',
-          cpu: `${Math.floor(Math.random() * 30 + 40)}%`,
-          memory: `${Math.floor(Math.random() * 20 + 60)}%`
-        }))
       } catch (err) {
         console.error('Failed to fetch devices:', err)
       }
     }
-
     fetchDevices()
     const interval = setInterval(fetchDevices, 3000)
     return () => clearInterval(interval)
-  }, [currentSession])
+  }, [])
 
-  const handleDeviceSelect = (deviceIds: string[]) => {
-    setSelectedDevices(deviceIds)
-  }
-
-  const handleViewSelect = (view: string, kpiType?: string) => {
-    const viewMap: Record<string, string> = {
-      'RF Measurement Summary Info': 'rf-summary',
-      'Signaling Message': 'signaling',
-      'User Defined Graph': 'graphs',
-      'User Defined Table': 'user-table',
-      'Map View': 'map',
-      'Session Control': 'session-control',
-      'Terminal': 'terminal',
-      '5GNR Information (MIB)': 'tabulated-kpi',
-      '5GNR SA Information (SIB1)': 'tabulated-kpi',
-      '5GNR Handover Statistics (intra NR-HO)': 'tabulated-kpi',
-      'LTE RRC State': 'tabulated-kpi',
-      'NRDC RF Measurement Summary Info': 'rf-summary'
+  const handleViewSelect = (viewName: string) => {
+    // Map view names to tab types
+    const viewTypeMap: Record<string, { type: Tab['type'], kpiType?: string }> = {
+      'RF Measurement Summary Info': { type: 'rf-summary' },
+      'NRDC RF Measurement Summary Info': { type: 'rf-summary' },
+      'Signaling Message': { type: 'signaling' },
+      '5GNR Information (MIB)': { type: 'tabulated', kpiType: '5GNR Information (MIB)' },
+      '5GNR SA Information (SIB1)': { type: 'tabulated', kpiType: '5GNR SA Information (SIB1)' },
+      '5GNR Handover Statistics (intra NR-HO)': { type: 'tabulated', kpiType: '5GNR Handover Statistics' },
+      'User Defined Table': { type: 'user-table' },
+      'User Defined Graph': { type: 'graph' }
     }
 
-    const mappedView = viewMap[view] || 'rf-summary'
+    const viewConfig = viewTypeMap[viewName] || { type: 'tabulated', kpiType: viewName }
     
     // Check if tab already exists
-    const existingTab = tabs.find(t => t.title === view)
+    const existingTab = tabs.find(t => t.title === viewName)
     if (existingTab) {
-      setActiveTab(existingTab.id)
+      setActiveTabId(existingTab.id)
       return
     }
-    
-    // Add new tab
-    const newTab = {
+
+    // Create new tab
+    const newTab: Tab = {
       id: Date.now().toString(),
-      title: view,
-      view: mappedView,
-      kpiType: view
+      title: viewName,
+      type: viewConfig.type,
+      kpiType: viewConfig.kpiType
     }
-    
+
     setTabs(prev => [...prev, newTab])
-    setActiveTab(newTab.id)
+    setActiveTabId(newTab.id)
   }
 
-  const closeTab = (tabId: string) => {
+  const closeTab = (tabId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     const tabIndex = tabs.findIndex(t => t.id === tabId)
     setTabs(prev => prev.filter(t => t.id !== tabId))
     
-    if (activeTab === tabId) {
+    if (activeTabId === tabId) {
       if (tabIndex > 0) {
-        setActiveTab(tabs[tabIndex - 1].id)
+        setActiveTabId(tabs[tabIndex - 1].id)
       } else if (tabs.length > 1) {
-        setActiveTab(tabs[1].id)
-      } else {
-        setActiveTab('1')
+        setActiveTabId(tabs[1].id)
       }
     }
   }
 
-  const renderView = (view: string, kpiType?: string) => {
-    const sessionId = currentSession?.id?.toString() || selectedDevices[0]
+  const renderTabContent = (tab: Tab) => {
+    const sessionId = currentSession?.id?.toString() || selectedDevices[0] || '1'
 
-    switch (view) {
+    switch (tab.type) {
       case 'grid':
-        return (
-          <MultiDeviceGrid
-            devices={devices}
-            onDeviceSelect={(deviceId) => setSelectedDevices([deviceId])}
-          />
-        )
+        return <MultiDeviceGrid devices={devices} onDeviceSelect={(id) => setSelectedDevices([id])} />
       case 'rf-summary':
         return <XCALRFSummary sessionId={sessionId} />
       case 'signaling':
         return <XCALSignalingViewer sessionId={sessionId} />
-      case 'graphs':
-        return <XCALGraphView sessionId={sessionId} />
+      case 'tabulated':
+        return <TabulatedKPIView sessionId={sessionId} kpiType={tab.kpiType || 'General'} />
       case 'user-table':
         return <UserDefinedTable sessionId={sessionId} />
-      case 'tabulated-kpi':
-        return <TabulatedKPIView sessionId={sessionId} kpiType={kpiType || 'General'} />
-      case 'map':
-        return <MapView sessionId={sessionId} />
-      case 'terminal':
-        return <EnhancedTerminalV2 sessionId={sessionId} />
-      case 'session-control':
-        return (
-          <SessionControlPanel
-            deviceId={selectedDevices[0] || null}
-            sessionId={currentSession?.id || null}
-            onSessionStart={setCurrentSession}
-            onSessionStop={() => setCurrentSession(null)}
-          />
-        )
+      case 'graph':
+        return <div className="h-full bg-gray-900 text-white flex items-center justify-center">Graph View - Coming Soon</div>
       default:
-        return <div className="flex items-center justify-center h-full text-gray-400">Select a view</div>
+        return <div className="h-full flex items-center justify-center text-gray-400">Select a view from sidebar</div>
     }
   }
 
@@ -169,14 +131,9 @@ export default function XCALInterface() {
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Top Menu Bar */}
       <div className="bg-white border-b border-gray-300 px-4 py-1 flex items-center gap-4 text-sm">
-        <span className="font-semibold cursor-pointer hover:text-blue-600">File</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">Setting</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">Statistics/Status</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">User Defined</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">Call Statistics</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">Mobile Reset</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">Window</span>
-        <span className="font-semibold cursor-pointer hover:text-blue-600">Help</span>
+        {['File', 'Setting', 'Statistics/Status', 'User Defined', 'Call Statistics', 'Mobile Reset', 'Window', 'Help'].map(menu => (
+          <span key={menu} className="font-semibold cursor-pointer hover:text-blue-600">{menu}</span>
+        ))}
       </div>
 
       {/* Toolbar */}
@@ -197,25 +154,11 @@ export default function XCALInterface() {
           </svg>
         </button>
         <div className="w-px h-6 bg-gray-400 mx-1" />
-        <button
-          onClick={handleStopSession}
-          className={`p-1 rounded ${currentSession ? 'bg-red-500 text-white hover:bg-red-600' : 'hover:bg-gray-300'}`}
-          title="Stop"
-          disabled={!currentSession}
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="6" width="12" height="12" />
-          </svg>
+        <button onClick={handleStopSession} disabled={!currentSession} className={`p-1 rounded ${currentSession ? 'bg-red-500 text-white hover:bg-red-600' : 'hover:bg-gray-300 opacity-50'}`} title="Stop">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /></svg>
         </button>
-        <button
-          onClick={handleStartSession}
-          className={`p-1 rounded ${!currentSession && selectedDevices[0] ? 'bg-green-500 text-white hover:bg-green-600' : 'hover:bg-gray-300'}`}
-          title="Start"
-          disabled={currentSession || !selectedDevices[0]}
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
+        <button onClick={handleStartSession} disabled={currentSession || !selectedDevices[0]} className={`p-1 rounded ${!currentSession && selectedDevices[0] ? 'bg-green-500 text-white hover:bg-green-600' : 'hover:bg-gray-300 opacity-50'}`} title="Start">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
         </button>
         <div className="w-px h-6 bg-gray-400 mx-1" />
         <button className="p-1 hover:bg-gray-300 rounded" title="Settings">
@@ -226,59 +169,44 @@ export default function XCALInterface() {
         </button>
         <div className="flex-1" />
         <div className="text-xs text-gray-600">
-          {currentSession ? (
-            <span className="text-green-600 font-semibold">● Recording</span>
-          ) : (
-            <span>Ready</span>
-          )}
+          {currentSession ? <span className="text-green-600 font-semibold">● Recording</span> : <span>Ready</span>}
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
+        {/* Fixed Left Sidebar */}
         <XCALSidebar
-          onDeviceSelect={handleDeviceSelect}
+          onDeviceSelect={setSelectedDevices}
           onKpiSelect={(kpi) => console.log('KPI:', kpi)}
           onViewSelect={handleViewSelect}
         />
 
-        {/* Content Area with Tabs */}
+        {/* Right Content Area with Tabs */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tab Bar */}
-          <div className="bg-gray-200 border-b border-gray-300 flex items-center gap-1 px-2 overflow-x-auto">
+          <div className="bg-gray-200 border-b border-gray-300 flex items-center overflow-x-auto">
             {tabs.map(tab => (
               <div
                 key={tab.id}
-                className={`flex items-center gap-2 px-3 py-1 rounded-t cursor-pointer ${
-                  activeTab === tab.id ? 'bg-white border-t border-l border-r border-gray-300' : 'bg-gray-100 hover:bg-gray-50'
+                onClick={() => setActiveTabId(tab.id)}
+                className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer border-r border-gray-300 text-sm whitespace-nowrap ${
+                  activeTabId === tab.id ? 'bg-white font-semibold' : 'bg-gray-100 hover:bg-gray-50'
                 }`}
-                onClick={() => setActiveTab(tab.id)}
               >
-                <span className="text-sm">{tab.title}</span>
+                <span>{tab.title}</span>
                 {tabs.length > 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      closeTab(tab.id)
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ×
-                  </button>
+                  <button onClick={(e) => closeTab(tab.id, e)} className="text-gray-500 hover:text-gray-700 font-bold">×</button>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Active View */}
+          {/* Active Tab Content */}
           <div className="flex-1 overflow-hidden bg-white">
             {tabs.map(tab => (
-              <div
-                key={tab.id}
-                className={`h-full ${activeTab === tab.id ? 'block' : 'hidden'}`}
-              >
-                {renderView(tab.view, tab.kpiType)}
+              <div key={tab.id} className={`h-full ${activeTabId === tab.id ? 'block' : 'hidden'}`}>
+                {renderTabContent(tab)}
               </div>
             ))}
           </div>
@@ -287,20 +215,10 @@ export default function XCALInterface() {
 
       {/* Status Bar */}
       <div className="bg-blue-600 text-white px-4 py-1 flex items-center gap-6 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">{systemStats.gps}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">{systemStats.logging}</span>
-          <span>CPU: {systemStats.cpu}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">Memory</span>
-          <span>{systemStats.memory}</span>
-        </div>
-        <div className="ml-auto">
-          <span>sires : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}, AMD : 2025-05-1</span>
-        </div>
+        <div><span className="font-semibold">No GPS</span></div>
+        <div><span className="font-semibold">{currentSession ? 'Logging' : 'Not Logging'}</span> <span>CPU: {Math.floor(Math.random() * 30 + 40)}%</span></div>
+        <div><span className="font-semibold">Memory</span> <span>{Math.floor(Math.random() * 20 + 60)}%</span></div>
+        <div className="ml-auto"><span>sires : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}, AMD : 2025-05-1</span></div>
       </div>
     </div>
   )
