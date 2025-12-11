@@ -37,6 +37,8 @@ export default function SignalingPage({
   const [selectedMsg, setSelectedMsg] = useState<Message | null>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [search, setSearch] = useState("")
+  const [captureStartTs, setCaptureStartTs] = useState<number | null>(null)
+  const [lastComPort, setLastComPort] = useState<string>("Auto (diag)")
   const tableRef = useRef<HTMLDivElement>(null)
   const streamRef = useRef<EventSource | null>(null)
 
@@ -161,11 +163,18 @@ export default function SignalingPage({
   const handleStartCapture = async () => {
     if (!selectedDevice || !deviceConnected) return
     setCapturing(true)
+    setMessages([])
+    setSelectedMsg(null)
     try {
       const session = await api.startSession(selectedDevice)
       setSessionId(session.id as number)
-      setMessages([])
-      setSelectedMsg(null)
+      setCaptureStartTs(Date.now())
+      if (session.sessionDir) {
+        const match = session.sessionDir.match(/COM(\\d+)/i)
+        if (match?.[1]) {
+          setLastComPort(`COM${match[1]}`)
+        }
+      }
     } catch (err: any) {
       setCapturing(false)
       alert(err?.message || "Failed to start capture")
@@ -180,12 +189,38 @@ export default function SignalingPage({
     }
     setCapturing(false)
     streamRef.current?.close()
+    setCaptureStartTs(null)
+  }
+
+  const handleRestartCapture = async () => {
+    if (sessionId) {
+      try {
+        await api.stopSession(sessionId)
+      } catch {}
+    }
+    setMessages([])
+    setSelectedMsg(null)
+    setCaptureStartTs(null)
+    setCapturing(false)
+    await handleStartCapture()
   }
 
   const bgMain = theme === "dark" ? "bg-slate-900 text-gray-100" : "bg-white text-gray-800"
   const headerBg = theme === "dark" ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
   const toolbarBg = theme === "dark" ? "bg-slate-900 border-slate-800" : "bg-gray-50 border-gray-200"
   const rowOdd = theme === "dark" ? "odd:bg-slate-900" : "odd:bg-gray-50"
+
+  const formatDuration = (start: number | null) => {
+    if (!start) return "00:00"
+    const ms = Date.now() - start
+    const totalSec = Math.floor(ms / 1000)
+    const min = Math.floor(totalSec / 60)
+    const sec = totalSec % 60
+    const hr = Math.floor(min / 60)
+    const mm = String(min % 60).padStart(2, "0")
+    const ss = String(sec).padStart(2, "0")
+    return hr > 0 ? `${hr}:${mm}:${ss}` : `${mm}:${ss}`
+  }
 
   const EmptyState = ({ title, subtitle }: { title: string; subtitle: string }) => (
     <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -275,25 +310,47 @@ export default function SignalingPage({
         ) : (
           <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col border-r border-gray-200">
-              <div className={`flex flex-wrap items-center gap-2 px-4 py-2 text-xs text-gray-700 border-b ${toolbarBg}`}>
-                <span>Message Filter:</span>
-                <select className="bg-white border border-gray-300 rounded px-2 py-1 text-xs">
-                  <option>None</option>
-                </select>
-                <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded">Filtering</button>
-                <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded">Filtering 2</button>
-                <button
-                  className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
-                  onClick={() => setCapturing((v) => !v)}
+              <div className={`flex flex-wrap items-center gap-3 px-4 py-2 text-xs text-gray-700 border-b ${toolbarBg}`}>
+                <span
+                  className={`px-2 py-1 rounded-full font-semibold ${
+                    capturing ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                  }`}
                 >
-                  {capturing ? "Pause" : "Resume"}
-                </button>
-                <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={exportCapture}>
-                  Export
-                </button>
-                <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={() => setMessages([])}>
-                  Clear
-                </button>
+                  {capturing ? "Capturing" : "Idle"}
+                </span>
+                <span>Device: {selectedDevice || "None"}</span>
+                <span>Port: {lastComPort}</span>
+                <span>Durée: {formatDuration(captureStartTs)}</span>
+                <span>Packets: {messages.length}</span>
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
+                    onClick={handleRestartCapture}
+                  >
+                    Restart capture
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
+                    onClick={() => setCapturing((v) => !v)}
+                  >
+                    {capturing ? "Pause" : "Resume"}
+                  </button>
+                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={exportCapture}>
+                    Export
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded"
+                    onClick={() => setMessages([])}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    className={`px-3 py-1 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`}
+                    onClick={() => setAutoScroll(!autoScroll)}
+                  >
+                    Auto Scroll
+                  </button>
+                </div>
               </div>
 
               <div ref={tableRef} className="flex-1 overflow-auto bg-white max-h-[720px]">
