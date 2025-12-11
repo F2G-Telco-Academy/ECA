@@ -1,118 +1,262 @@
 import { useState, useEffect } from 'react'
+import { api } from '@/utils/api'
+import type { Device } from '@/types'
 
 interface SidebarProps {
-  selectedDevice: string | null
-  onDeviceSelect: (deviceId: string) => void
-  onSelectCategory?: (category: string|null) => void
+  onDeviceSelect: (deviceIds: string[]) => void
+  onKpiSelect: (kpi: string) => void
+  onViewSelect: (view: string) => void
 }
 
-export default function Sidebar({ selectedDevice, onDeviceSelect, onSelectCategory }: SidebarProps) {
-  const [devices, setDevices] = useState<any[]>([])
-  // Expand Device Manager and Messages by default to mirror the design
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['device-manager', 'messages']))
-  const [selectedCategory, setSelectedCategory] = useState<string|null>(null)
+export default function Sidebar({ onDeviceSelect, onKpiSelect, onViewSelect }: SidebarProps) {
+  const [devices, setDevices] = useState<Device[]>([])
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([])
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    mobile: true,
+    scanner: false,
+    gps: false,
+    message: false,
+    layer3kpi: false,
+    '5gnr': false,
+    lte: false,
+    nas: false,
+    rfkpi: true,
+    userdefined: false,
+    qualcomm: false,
+    qualcommMsg: false,
+    '5gnrq': false,
+    lteadvq: false,
+    wcdma: false,
+    cdma: false,
+    smartapp: false,
+    autocallkpi: false
+  })
+    autocallkpi: false
+  })
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch('/api/sessions')
-      .then(res => res.json())
-      .then(data => setDevices(data))
-      .catch(console.error)
+    const fetchDevices = async () => {
+      try {
+        const devs = await api.getDevices()
+        setDevices(devs)
+      } catch (err) {
+        console.error('Failed to fetch devices:', err)
+      }
+    }
+    fetchDevices()
+    const interval = setInterval(fetchDevices, 3000)
+    return () => clearInterval(interval)
   }, [])
 
-  const toggleSection = (section: string) => {
-    const newExpanded = new Set(expandedSections)
-    if (newExpanded.has(section)) {
-      newExpanded.delete(section)
-    } else {
-      newExpanded.add(section)
-    }
-    setExpandedSections(newExpanded)
+  const toggle = (key: string) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
+
+  const handleDeviceToggle = (deviceId: string) => {
+    const newSelected = selectedDevices.includes(deviceId)
+      ? selectedDevices.filter(id => id !== deviceId)
+      : [...selectedDevices, deviceId]
+    setSelectedDevices(newSelected)
+    onDeviceSelect(newSelected)
   }
 
-  const handleCategorySelect = (cat: string|null) => {
-    setSelectedCategory(cat)
-    onSelectCategory?.(cat)
+  const handleItemClick = (item: string) => {
+    onViewSelect(item)
+    onKpiSelect(item)
   }
 
   return (
-    <div className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto text-gray-800">
-      <div className="p-2">
-        {/* Device Manager */}
-        <div className="mb-4">
-          <div
-            className="font-bold text-sm mb-2 cursor-pointer flex items-center text-gray-700"
-            onClick={() => toggleSection('device-manager')}
-          >
-            <span className="mr-2">{expandedSections.has('device-manager') ? '▼' : '▶'}</span>
-            Device Manager
+    <div className="w-64 bg-gray-100 border-r border-gray-300 flex flex-col h-full overflow-hidden text-xs">
+      {/* Mobile */}
+      <div className="border-b border-gray-300">
+        <div onClick={() => toggle('mobile')} className="px-3 py-2 bg-gray-200 cursor-pointer hover:bg-gray-300 flex items-center justify-between">
+          <span className="font-semibold">Mobile</span>
+          <span>{expanded.mobile ? '▼' : '▶'}</span>
+        </div>
+        {expanded.mobile && (
+          <div className="p-2">
+            {devices.map((device, idx) => (
+              <label key={device.deviceId} className="flex items-center gap-2 hover:bg-gray-200 p-1 rounded cursor-pointer">
+                <input type="checkbox" checked={selectedDevices.includes(device.deviceId)} onChange={() => handleDeviceToggle(device.deviceId)} className="w-3 h-3" />
+                <span className={selectedDevices.includes(device.deviceId) ? 'text-blue-600 font-semibold' : ''}>
+                  Mobile {idx + 1} ({device.deviceId.slice(0, 8)})
+                </span>
+              </label>
+            ))}
+            {devices.length === 0 && <div className="text-gray-500 p-2">No devices</div>}
           </div>
-          {expandedSections.has('device-manager') && (
-            <div className="pl-2">
-              {devices.map((device, idx) => (
-                <div
-                  key={device.id}
-                  onClick={() => onDeviceSelect(device.id)}
-                  className={`pl-4 py-1 rounded cursor-pointer hover:bg-gray-100 flex items-center gap-2 ${
-                    selectedDevice === device.id ? 'bg-blue-50 border border-blue-200' : ''
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  Mobile {idx + 1}
-                </div>
+        )}
+      </div>
+
+      {/* Scanner */}
+      <div className="border-b border-gray-300">
+        <div onClick={() => toggle('scanner')} className="px-3 py-2 bg-gray-200 cursor-pointer hover:bg-gray-300 flex items-center justify-between">
+          <span className="font-semibold">Scanner</span>
+          <span>{expanded.scanner ? '▼' : '▶'}</span>
+        </div>
+        {expanded.scanner && (
+          <div className="p-2">
+            <label className="flex items-center gap-2 hover:bg-gray-200 p-1 rounded cursor-pointer">
+              <input type="checkbox" className="w-3 h-3" />
+              <span>Scanner 1</span>
+            </label>
+            <label className="flex items-center gap-2 hover:bg-gray-200 p-1 rounded cursor-pointer">
+              <input type="checkbox" className="w-3 h-3" />
+              <span>Scanner 2</span>
+            </label>
+          </div>
+        )}
+      </div>
+
+      {/* GPS */}
+      <div className="border-b border-gray-300">
+        <div onClick={() => toggle('gps')} className="px-3 py-2 bg-gray-200 cursor-pointer hover:bg-gray-300 flex items-center justify-between">
+          <span className="font-semibold">GPS</span>
+          <span>{expanded.gps ? '▼' : '▶'}</span>
+        </div>
+      </div>
+
+      {/* Supported KPIs */}
+      <div className="flex-1 overflow-auto">
+        <div className="px-3 py-2 bg-gray-200 border-b border-gray-300">
+          <span className="font-semibold">Supported KPIs</span>
+        </div>
+        <div className="p-2">
+          <input type="text" placeholder="Search Keyword" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+        </div>
+
+        {/* Message */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('message')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.message ? '▼' : '▶'}</span>
+            <span className="font-semibold">Message</span>
+          </div>
+          {expanded.message && (
+            <div>
+              {['Signaling Message', 'Terminal Logs', 'LBS Message', 'LCS Message', 'PPP Frame/Mobile Packet Message', 'AirPcap Message', 'HTTP / SIP Message', 'H.324m Message Viewer'].map(item => (
+                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
               ))}
-              {devices.length === 0 && (
-                <div className="pl-4 py-1 text-xs text-gray-400">No devices connected</div>
+            </div>
+          )}
+        </div>
+
+        {/* Layer3 KPI */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('layer3kpi')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.layer3kpi ? '▼' : '▶'}</span>
+            <span className="font-semibold">Layer3 KPI</span>
+          </div>
+          {expanded.layer3kpi && (
+            <div>
+              {/* 5GNR */}
+              <div onClick={() => toggle('5gnr')} className="px-6 py-1 bg-gray-100 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+                <span>{expanded['5gnr'] ? '▼' : '▶'}</span>
+                <span className="font-semibold">5GNR</span>
+              </div>
+              {expanded['5gnr'] && (
+                <div>
+                  {['5GNR Information (MIB)', '5GNR SA Information (SIB1)', '5GNR SipCell Information (Reconfig)', '5GNR TDD UL-DL Configuration', '5GNR NSA RRC State', '5GNR NSA Status Information', '5GNR RRC State', '5GNR SA Status Information', '5GNR UE Capability', '5GNR Feature Sets', '5GNR SCG Mobility Statistics', '5GNR EPS Fallback Statistics', '5GNR Handover Statistics (intra NR-HO)', '5GNR Handover Event Information', '5GNR SCell State'].map(item => (
+                    <div key={item} onClick={() => handleItemClick(item)} className="px-9 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+                  ))}
+                </div>
               )}
+              {/* LTE */}
+              <div onClick={() => toggle('lte')} className="px-6 py-1 bg-gray-100 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+                <span>{expanded.lte ? '▼' : '▶'}</span>
+                <span className="font-semibold">LTE</span>
+              </div>
+              {expanded.lte && (
+                <div>
+                  {['LTE RRC State', 'LTE NAS'].map(item => (
+                    <div key={item} onClick={() => handleItemClick(item)} className="px-9 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+                  ))}
+                </div>
+              )}
+              {/* NAS */}
+              <div onClick={() => toggle('nas')} className="px-6 py-1 bg-gray-100 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+                <span>{expanded.nas ? '▼' : '▶'}</span>
+                <span className="font-semibold">NAS</span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Signaling Messages */}
-        <div className="mb-2">
-          <div
-            className={`cursor-pointer hover:bg-gray-100 py-1 px-2 rounded text-gray-700 ${selectedCategory===null?'bg-blue-50 border border-blue-200':''}`}
-            onClick={() => handleCategorySelect(null)}
-            title="Show all signaling messages"
-          >
-            📡 Signaling Messages
+        {/* RF KPI */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('rfkpi')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.rfkpi ? '▼' : '▶'}</span>
+            <span className="font-semibold">RF KPI</span>
           </div>
-        </div>
-
-        {/* KPIs */}
-        <div className="mb-4">
-          <div className="cursor-pointer hover:bg-gray-100 py-1 px-2 rounded text-gray-700">📊 KPIs</div>
-        </div>
-
-        {/* Messages group */}
-        <div className="mb-2">
-          <div
-            className="cursor-pointer py-1 flex items-center px-2 rounded hover:bg-gray-100 text-gray-700"
-            onClick={() => toggleSection('messages')}
-          >
-            <span className="mr-2">{expandedSections.has('messages') ? '▼' : '▶'}</span>
-            Messages
-          </div>
-          {expandedSections.has('messages') && (
-            <div className="pl-6 text-sm">
-              {[
-                { key: 'rrc', label: 'RRC Connection' },
-                { key: 'mib', label: 'MIB Information' },
-                { key: 'sib', label: 'SIB Information' },
-                { key: 'nas5g', label: 'NAS 5G' },
-                { key: 'nas4g', label: 'NAS 4G' },
-                { key: 'nas3g', label: 'NAS 3G' },
-                { key: 'nas2g', label: 'NAS 2G' },
-              ].map(item => (
-                <div
-                  key={item.key}
-                  className={`py-1 hover:bg-gray-100 cursor-pointer rounded px-2 ${selectedCategory===item.key?'bg-blue-50 border border-blue-200':''}`}
-                  onClick={() => handleCategorySelect(item.key)}
-                >
-                  {item.label}
-                </div>
+          {expanded.rfkpi && (
+            <div>
+              {['RF Measurement Summary Info', 'NRDC RF Measurement Summary Info', '5GNR Beamforming Information', 'Benchmarking RF Summary', 'Dynamic Spectrum Sharing'].map(item => (
+                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
               ))}
             </div>
           )}
+        </div>
+
+        {/* User Defined */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('userdefined')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.userdefined ? '▼' : '▶'}</span>
+            <span className="font-semibold">User Defined</span>
+          </div>
+          {expanded.userdefined && (
+            <div>
+              {['User Defined Table', 'User Defined Graph'].map(item => (
+                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Qualcomm */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('qualcomm')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.qualcomm ? '▼' : '▶'}</span>
+            <span className="font-semibold">Qualcomm</span>
+          </div>
+          {expanded.qualcomm && (
+            <div>
+              <div onClick={() => toggle('qualcommMsg')} className="px-6 py-1 bg-gray-100 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+                <span>{expanded.qualcommMsg ? '▼' : '▶'}</span>
+                <span className="font-semibold">Message</span>
+              </div>
+              {expanded.qualcommMsg && (
+                <div>
+                  {['Qualcomm DM Message', 'Qualcomm Mobile Message', 'Qualcomm Event Report Message', 'Qualcomm QChat Message Viewer', 'Qualcomm L2 RLC Messages'].map(item => (
+                    <div key={item} onClick={() => handleItemClick(item)} className="px-9 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+                  ))}
+                </div>
+              )}
+              {['Common-Q', '5GNR-Q', 'LTE/Adv-Q Graph', 'LTE/Adv-Q', 'WCDMA-Graph', 'WCDMA-Statistics', 'WCDMA-Status', 'WCDMA-Layer 3', 'CDMA-Graph', 'CDMA-Statistics', 'CDMA-Status'].map(item => (
+                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Smart App */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('smartapp')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.smartapp ? '▼' : '▶'}</span>
+            <span className="font-semibold">Smart App</span>
+          </div>
+          {expanded.smartapp && (
+            <div>
+              {['Smart App Message List', 'Smart App Status', 'Smart App Bluetooth/LE Status', 'Smart Standalone Mode Setting', 'WiFi Scan List', 'WCDMA RF Info', 'WiFi Info'].map(item => (
+                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-blue-50 cursor-pointer">{item}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Autocall KPI */}
+        <div className="border-b border-gray-300">
+          <div onClick={() => toggle('autocallkpi')} className="px-3 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2">
+            <span>{expanded.autocallkpi ? '▼' : '▶'}</span>
+            <span className="font-semibold">Autocall KPI</span>
+          </div>
         </div>
       </div>
     </div>

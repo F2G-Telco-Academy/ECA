@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-import XCALSidebar from '@/components/XCALSidebar'
-import XCALRFSummary from '@/components/XCALRFSummary'
-import XCALSignalingViewer from '@/components/XCALSignalingViewer'
+import Sidebar from '@/components/Sidebar'
+import RFSummary from '@/components/RFSummary'
+import SignalingViewer from '@/components/SignalingViewer'
 import TabulatedKPIView from '@/components/TabulatedKPIView'
 import UserDefinedTable from '@/components/UserDefinedTable'
 import MultiDeviceGrid from '@/components/MultiDeviceGrid'
 import MapView from '@/components/MapView'
-import XCALGraphView from '@/components/XCALGraphView'
-import XCALTerminalViewer from '@/components/XCALTerminalViewer'
-import XCALQualcommViewer from '@/components/XCALQualcommViewer'
-import XCALMultiPanelGrid from '@/components/XCALMultiPanelGrid'
+import GraphView from '@/components/GraphView'
+import TerminalViewer from '@/components/TerminalViewer'
+import QualcommViewer from '@/components/QualcommViewer'
+import MultiPanelGrid from '@/components/MultiPanelGrid'
 import { api } from '@/utils/api'
 import type { Device } from '@/types'
 
@@ -20,7 +20,7 @@ interface Tab {
   kpiType?: string
 }
 
-export default function XCALInterface() {
+export default function AnalyzerInterface() {
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
   const [currentSession, setCurrentSession] = useState<any>(null)
@@ -98,13 +98,13 @@ export default function XCALInterface() {
 
     switch (tab.type) {
       case 'multi-panel':
-        return <XCALMultiPanelGrid sessionId={sessionId} />
+        return <MultiPanelGrid sessionId={sessionId} />
       case 'grid':
         return <MultiDeviceGrid devices={devices} onDeviceSelect={(id) => setSelectedDevices([id])} />
       case 'rf-summary':
-        return <XCALRFSummary sessionId={sessionId} />
+        return <RFSummary sessionId={sessionId} />
       case 'signaling':
-        return <XCALSignalingViewer sessionId={sessionId} />
+        return <SignalingViewer sessionId={sessionId} />
       case 'tabulated':
         return <TabulatedKPIView sessionId={sessionId} kpiType={tab.kpiType || 'General'} />
       case 'user-table':
@@ -112,11 +112,11 @@ export default function XCALInterface() {
       case 'map':
         return <MapView sessionId={sessionId} />
       case 'graph':
-        return <XCALGraphView sessionId={sessionId} />
+        return <GraphView sessionId={sessionId} />
       case 'terminal':
-        return <XCALTerminalViewer sessionId={sessionId} />
+        return <TerminalViewer sessionId={sessionId} />
       case 'qualcomm':
-        return <XCALQualcommViewer sessionId={sessionId} />
+        return <QualcommViewer sessionId={sessionId} />
       default:
         return <div className="h-full flex items-center justify-center text-gray-400">Select a view from sidebar</div>
     }
@@ -191,7 +191,7 @@ export default function XCALInterface() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Fixed Left Sidebar */}
-        <XCALSidebar
+        <Sidebar
           onDeviceSelect={setSelectedDevices}
           onKpiSelect={(kpi) => console.log('KPI:', kpi)}
           onViewSelect={handleViewSelect}
@@ -233,7 +233,7 @@ export default function XCALInterface() {
         <div><span className="font-semibold">No GPS</span></div>
         <div><span className="font-semibold">{currentSession ? 'Logging' : 'Not Logging'}</span> <span>CPU: {Math.floor(Math.random() * 30 + 40)}%</span></div>
         <div><span className="font-semibold">Memory</span> <span>{Math.floor(Math.random() * 20 + 60)}%</span></div>
-        <div className="ml-auto"><span>sires : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}, AMD : 2025-05-1</span></div>
+        <div className="ml-auto"><span>ECA : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span></div>
       </div>
     </div>
   )
