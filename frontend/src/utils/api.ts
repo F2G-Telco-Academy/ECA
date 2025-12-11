@@ -151,6 +151,12 @@ export const api = {
     return res.json()
   },
 
+  async getKpisByCategory(sessionId: number | string, category: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/kpis/session/${sessionId}/category/${category}`)
+    if (!res.ok) throw new Error('Failed to fetch KPIs by category')
+    return res.json()
+  },
+
   // Anomalies
   async getAnomalies(sessionId: string | number): Promise<Anomaly[]> {
     const res = await fetch(`${API_BASE}/anomalies/session/${sessionId}`)

@@ -2,8 +2,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import type { Device } from '@/types'
 
-interface Device { deviceId: string; deviceModel: string }
 interface Message {
   id: number
   timestamp: string

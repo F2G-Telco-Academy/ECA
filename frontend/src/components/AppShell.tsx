@@ -7,6 +7,7 @@ import SignalingPage from '@/components/SignalingPage'
 import ConvertView from '@/views/ConvertView'
 import VisualizeView from '@/views/VisualizeView'
 import AnalyzeView from '@/views/AnalyzeView'
+import type { Device } from '@/types'
 
 type TabId = 'signaling' | 'convert' | 'visualize' | 'analyze'
 
@@ -14,14 +15,14 @@ export default function AppShell() {
   const [tab, setTab] = useState<TabId>('signaling')
   const [selectedDevice, setSelectedDevice] = useState<string|null>(null)
   const [packetCount, setPacketCount] = useState(0)
-  const [devices, setDevices] = useState<{deviceId:string; deviceModel?:string}[]>([])
+  const [devices, setDevices] = useState<Device[]>([])
   const [category, setCategory] = useState<string|null>(null)
 
   // Load devices periodically to fill chips and sidebar
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/sessions')
+        const res = await fetch('/api/devices')
         if (res.ok) {
           const list = await res.json()
           setDevices(list || [])
@@ -81,7 +82,7 @@ export default function AppShell() {
         {/* Main content area swaps only the embedded view */}
         <div className="flex-1 overflow-hidden">{content}</div>
       </div>
-      <StatusBar currentDevice={selectedDevice || undefined} />
+      <StatusBar />
     </div>
   )
 }

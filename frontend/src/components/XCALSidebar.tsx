@@ -54,25 +54,46 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
   }
 
   const [search, setSearch] = useState('')
-  const kpiTree = {
-    'Views': [
-      'RF Measurement Summary Info',
-      'Signaling Message',
-      'User Defined Graph',
-      'User Defined Table',
-      'Map View',
-      'Session Control'
-    ],
+  const [expandedSubSections, setExpandedSubSections] = useState<Record<string, boolean>>({})
+
+  const toggleSubSection = (section: string) => {
+    setExpandedSubSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
+
+  const kpiTree: Record<string, any> = {
     'Message': [
+      'AirPcap Message',
+      'LBS Message',
+      'LCS Message',
+      'PPP Frame/Mobile Packet Message',
       'AirPcap Message',
       'HTTP / SIP Message',
       'H.324m Message Viewer'
     ],
-    'Layer3 KPI': [
-      '5GNR',
-      'LTE',
-      'NAS'
-    ],
+    'Layer3 KPI': {
+      '5GNR': [
+        '5GNR Information (MIB)',
+        '5GNR SA Information (SIB1)',
+        '5GNR SipCell Information (Reconfig)',
+        '5GNR TDD UL-DL Configuration',
+        '5GNR NSA RRC State',
+        '5GNR NSA Status Information',
+        '5GNR RRC State',
+        '5GNR SA Status Information',
+        '5GNR UE Capability',
+        '5GNR Feature Sets',
+        '5GNR SCG Mobility Statistics',
+        '5GNR EPS Fallback Statistics',
+        '5GNR Handover Statistics (intra NR-HO)',
+        '5GNR Handover Event Information',
+        '5GNR SCell State'
+      ],
+      'LTE': [
+        'LTE RRC State',
+        'LTE NAS'
+      ],
+      'NAS': []
+    },
     'RF KPI': [
       'RF Measurement Summary Info',
       'NRDC RF Measurement Summary Info',
@@ -80,20 +101,28 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
       'Benchmarking RF Summary',
       'Dynamic Spectrum Sharing'
     ],
-    'Qualcomm': [
-      'Message',
-      'Common-Q',
-      '5GNR-Q',
-      'LTE/Adv-Q Graph',
-      'LTE/Adv-Q',
-      'WCDMA Graph',
-      'WCDMA Statistics',
-      'WCDMA Status',
-      'WCDMA Layer 3',
-      'CDMA-Graph',
-      'CDMA-Statistics',
-      'CDMA-Status'
-    ],
+    'Qualcomm': {
+      'Message': [
+        'Qualcomm DM Message',
+        'Qualcomm Mobile Message',
+        'Qualcomm Event Report Message',
+        'Qualcomm QChat Message Viewer',
+        'Qualcomm L2 RLC Messages'
+      ],
+      'items': [
+        'Common-Q',
+        '5GNR-Q',
+        'LTE/Adv-Q Graph',
+        'LTE/Adv-Q',
+        'WCDMA-Graph',
+        'WCDMA-Statistics',
+        'WCDMA-Status',
+        'WCDMA-Layer 3',
+        'CDMA-Graph',
+        'CDMA-Statistics',
+        'CDMA-Status'
+      ]
+    },
     'XCAL-Smart': [
       'Smart App Message List',
       'Smart App Status',
@@ -104,6 +133,61 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
       'WiFi Info'
     ],
     'Autocall KPI': []
+  }
+
+  const renderKpiItem = (item: string, category: string, level = 0) => (
+    <div
+      key={item}
+      onClick={() => { onViewSelect(item); onKpiSelect(item); }}
+      className="px-6 py-1.5 hover:bg-blue-50 cursor-pointer text-xs"
+      style={{ paddingLeft: `${24 + level * 12}px` }}
+    >
+      {item}
+    </div>
+  )
+
+  const renderKpiSection = (category: string, content: any, parentKey: string) => {
+    const sectionKey = `${parentKey}-${category.toLowerCase().replace(/\s+/g, '')}`
+    const isExpanded = expandedSubSections[sectionKey]
+
+    if (Array.isArray(content)) {
+      // Simple array of items
+      return content.filter(i => i.toLowerCase().includes(search.toLowerCase())).map(item => 
+        renderKpiItem(item, category)
+      )
+    } else if (typeof content === 'object') {
+      // Nested structure
+      return Object.entries(content).map(([subCategory, subItems]) => {
+        if (subCategory === 'items') {
+          return (subItems as string[]).filter(i => i.toLowerCase().includes(search.toLowerCase())).map(item =>
+            renderKpiItem(item, category)
+          )
+        }
+        
+        const subKey = `${sectionKey}-${subCategory.toLowerCase()}`
+        const subExpanded = expandedSubSections[subKey]
+        
+        return (
+          <div key={subCategory}>
+            <div
+              onClick={() => toggleSubSection(subKey)}
+              className="px-6 py-1.5 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2 text-xs"
+            >
+              <span>{subExpanded ? '▼' : '▶'}</span>
+              <span className="font-semibold">{subCategory}</span>
+            </div>
+            {subExpanded && (
+              <div className="bg-white">
+                {(subItems as string[]).filter(i => i.toLowerCase().includes(search.toLowerCase())).map(item =>
+                  renderKpiItem(item, subCategory, 1)
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })
+    }
+    return null
   }
 
   return (
@@ -191,32 +275,27 @@ export default function XCALSidebar({ onDeviceSelect, onKpiSelect, onViewSelect 
 
         {/* KPI Tree */}
         <div className="text-xs">
-          {Object.entries(kpiTree).map(([category, items]) => (
-            <div key={category} className="border-b border-gray-300">
-              <div
-                onClick={() => toggleSection(category.toLowerCase().replace(/\s+/g, ''))}
-                className="px-3 py-2 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2"
-              >
-                <span className="text-xs">
-                  {expandedSections[category.toLowerCase().replace(/\s+/g, '')] ? '▼' : '▶'}
-                </span>
-                <span className="font-semibold">{category}</span>
-              </div>
-              {expandedSections[category.toLowerCase().replace(/\s+/g, '')] && (
-                <div className="bg-white">
-                  {items.filter(i => i.toLowerCase().includes(search.toLowerCase())).map((item) => (
-                    <div
-                      key={item}
-                      onClick={() => { onViewSelect(item); onKpiSelect(item); }}
-                      className="px-6 py-1.5 hover:bg-blue-50 cursor-pointer text-xs"
-                    >
-                      {item}
-                    </div>
-                  ))}
+          {Object.entries(kpiTree).map(([category, content]) => {
+            const categoryKey = category.toLowerCase().replace(/\s+/g, '')
+            const isExpanded = expandedSections[categoryKey]
+            
+            return (
+              <div key={category} className="border-b border-gray-300">
+                <div
+                  onClick={() => toggleSection(categoryKey)}
+                  className="px-3 py-2 bg-gray-50 cursor-pointer hover:bg-gray-200 flex items-center gap-2"
+                >
+                  <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                  <span className="font-semibold">{category}</span>
                 </div>
-              )}
-            </div>
-          ))}
+                {isExpanded && (
+                  <div className="bg-white">
+                    {renderKpiSection(category, content, categoryKey)}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

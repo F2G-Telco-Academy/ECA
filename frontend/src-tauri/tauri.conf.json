@@ -35,37 +35,5 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  },
-  "plugins": {
-    "shell": {
-      "open": true,
-      "scope": [
-        {
-          "name": "open-url",
-          "cmd": "open",
-          "args": true
-        }
-      ]
-    },
-    "fs": {
-      "scope": [
-        "$APPDATA/*",
-        "$APPDATA/**",
-        "$RESOURCE/*",
-        "$RESOURCE/**"
-      ]
-    },
-    "http": {
-      "scope": [
-        "http://localhost:8080/**",
-        "http://127.0.0.1:8080/**"
-      ]
-    },
-    "dialog": {
-      "all": true
-    },
-    "notification": {
-      "all": true
-    }
   }
 }

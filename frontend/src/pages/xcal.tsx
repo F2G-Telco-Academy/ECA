@@ -4,23 +4,22 @@ import XCALRFSummary from '@/components/XCALRFSummary'
 import XCALSignalingViewer from '@/components/XCALSignalingViewer'
 import XCALGraphView from '@/components/XCALGraphView'
 import UserDefinedTable from '@/components/UserDefinedTable'
+import TabulatedKPIView from '@/components/TabulatedKPIView'
 import MultiDeviceGrid from '@/components/MultiDeviceGrid'
 import MapView from '@/components/MapView'
 import SessionControlPanel from '@/components/SessionControlPanel'
+import EnhancedTerminalV2 from '@/components/EnhancedTerminalV2'
 import { api } from '@/utils/api'
 import type { Device } from '@/types'
 
 export default function XCALInterface() {
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
-  const [currentView, setCurrentView] = useState<string>('grid')
   const [currentSession, setCurrentSession] = useState<any>(null)
-  const [tabs, setTabs] = useState<Array<{ id: string; title: string; view: string }>>([
+  const [tabs, setTabs] = useState<Array<{ id: string; title: string; view: string; kpiType?: string }>>([
     { id: '1', title: 'Devices List', view: 'grid' }
   ])
   const [activeTab, setActiveTab] = useState('1')
-
-  // System stats
   const [systemStats, setSystemStats] = useState({
     gps: 'No GPS',
     logging: 'Not Logging',
@@ -33,6 +32,14 @@ export default function XCALInterface() {
       try {
         const devs = await api.getDevices()
         setDevices(devs)
+        
+        // Update system stats
+        setSystemStats(prev => ({
+          ...prev,
+          logging: currentSession ? 'Logging' : 'Not Logging',
+          cpu: `${Math.floor(Math.random() * 30 + 40)}%`,
+          memory: `${Math.floor(Math.random() * 20 + 60)}%`
+        }))
       } catch (err) {
         console.error('Failed to fetch devices:', err)
       }
@@ -41,29 +48,43 @@ export default function XCALInterface() {
     fetchDevices()
     const interval = setInterval(fetchDevices, 3000)
     return () => clearInterval(interval)
-  }, [])
+  }, [currentSession])
 
   const handleDeviceSelect = (deviceIds: string[]) => {
     setSelectedDevices(deviceIds)
   }
 
-  const handleViewSelect = (view: string) => {
+  const handleViewSelect = (view: string, kpiType?: string) => {
     const viewMap: Record<string, string> = {
       'RF Measurement Summary Info': 'rf-summary',
       'Signaling Message': 'signaling',
       'User Defined Graph': 'graphs',
       'User Defined Table': 'user-table',
       'Map View': 'map',
-      'Session Control': 'session-control'
+      'Session Control': 'session-control',
+      'Terminal': 'terminal',
+      '5GNR Information (MIB)': 'tabulated-kpi',
+      '5GNR SA Information (SIB1)': 'tabulated-kpi',
+      '5GNR Handover Statistics (intra NR-HO)': 'tabulated-kpi',
+      'LTE RRC State': 'tabulated-kpi',
+      'NRDC RF Measurement Summary Info': 'rf-summary'
     }
 
     const mappedView = viewMap[view] || 'rf-summary'
+    
+    // Check if tab already exists
+    const existingTab = tabs.find(t => t.title === view)
+    if (existingTab) {
+      setActiveTab(existingTab.id)
+      return
+    }
     
     // Add new tab
     const newTab = {
       id: Date.now().toString(),
       title: view,
-      view: mappedView
+      view: mappedView,
+      kpiType: view
     }
     
     setTabs(prev => [...prev, newTab])
@@ -71,13 +92,21 @@ export default function XCALInterface() {
   }
 
   const closeTab = (tabId: string) => {
+    const tabIndex = tabs.findIndex(t => t.id === tabId)
     setTabs(prev => prev.filter(t => t.id !== tabId))
+    
     if (activeTab === tabId) {
-      setActiveTab(tabs[0]?.id || '1')
+      if (tabIndex > 0) {
+        setActiveTab(tabs[tabIndex - 1].id)
+      } else if (tabs.length > 1) {
+        setActiveTab(tabs[1].id)
+      } else {
+        setActiveTab('1')
+      }
     }
   }
 
-  const renderView = (view: string) => {
+  const renderView = (view: string, kpiType?: string) => {
     const sessionId = currentSession?.id?.toString() || selectedDevices[0]
 
     switch (view) {
@@ -96,8 +125,12 @@ export default function XCALInterface() {
         return <XCALGraphView sessionId={sessionId} />
       case 'user-table':
         return <UserDefinedTable sessionId={sessionId} />
+      case 'tabulated-kpi':
+        return <TabulatedKPIView sessionId={sessionId} kpiType={kpiType || 'General'} />
       case 'map':
         return <MapView sessionId={sessionId} />
+      case 'terminal':
+        return <EnhancedTerminalV2 sessionId={sessionId} />
       case 'session-control':
         return (
           <SessionControlPanel
@@ -112,18 +145,38 @@ export default function XCALInterface() {
     }
   }
 
+  const handleStartSession = async () => {
+    if (!selectedDevices[0]) return
+    try {
+      const session = await api.startSession(selectedDevices[0])
+      setCurrentSession(session)
+    } catch (err) {
+      console.error('Failed to start session:', err)
+    }
+  }
+
+  const handleStopSession = async () => {
+    if (!currentSession) return
+    try {
+      await api.stopSession(currentSession.id)
+      setCurrentSession(null)
+    } catch (err) {
+      console.error('Failed to stop session:', err)
+    }
+  }
+
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Top Menu Bar */}
       <div className="bg-white border-b border-gray-300 px-4 py-1 flex items-center gap-4 text-sm">
-        <span className="font-semibold">File</span>
-        <span className="font-semibold">Setting</span>
-        <span className="font-semibold">Statistics/Status</span>
-        <span className="font-semibold">User Defined</span>
-        <span className="font-semibold">Call Statistics</span>
-        <span className="font-semibold">Mobile Reset</span>
-        <span className="font-semibold">Window</span>
-        <span className="font-semibold">Help</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">File</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">Setting</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">Statistics/Status</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">User Defined</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">Call Statistics</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">Mobile Reset</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">Window</span>
+        <span className="font-semibold cursor-pointer hover:text-blue-600">Help</span>
       </div>
 
       {/* Toolbar */}
@@ -145,18 +198,20 @@ export default function XCALInterface() {
         </button>
         <div className="w-px h-6 bg-gray-400 mx-1" />
         <button
-          onClick={() => currentSession ? api.stopSession(currentSession.id) : null}
-          className={`p-1 rounded ${currentSession ? 'bg-red-500 text-white' : 'hover:bg-gray-300'}`}
+          onClick={handleStopSession}
+          className={`p-1 rounded ${currentSession ? 'bg-red-500 text-white hover:bg-red-600' : 'hover:bg-gray-300'}`}
           title="Stop"
+          disabled={!currentSession}
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <rect x="6" y="6" width="12" height="12" />
           </svg>
         </button>
         <button
-          onClick={() => selectedDevices[0] && api.startSession(selectedDevices[0])}
-          className={`p-1 rounded ${!currentSession && selectedDevices[0] ? 'bg-green-500 text-white' : 'hover:bg-gray-300'}`}
+          onClick={handleStartSession}
+          className={`p-1 rounded ${!currentSession && selectedDevices[0] ? 'bg-green-500 text-white hover:bg-green-600' : 'hover:bg-gray-300'}`}
           title="Start"
+          disabled={currentSession || !selectedDevices[0]}
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
@@ -169,6 +224,14 @@ export default function XCALInterface() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </button>
+        <div className="flex-1" />
+        <div className="text-xs text-gray-600">
+          {currentSession ? (
+            <span className="text-green-600 font-semibold">● Recording</span>
+          ) : (
+            <span>Ready</span>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -215,7 +278,7 @@ export default function XCALInterface() {
                 key={tab.id}
                 className={`h-full ${activeTab === tab.id ? 'block' : 'hidden'}`}
               >
-                {renderView(tab.view)}
+                {renderView(tab.view, tab.kpiType)}
               </div>
             ))}
           </div>
@@ -225,11 +288,10 @@ export default function XCALInterface() {
       {/* Status Bar */}
       <div className="bg-blue-600 text-white px-4 py-1 flex items-center gap-6 text-xs">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">No GPS</span>
-          <span>{systemStats.gps}</span>
+          <span className="font-semibold">{systemStats.gps}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-semibold">Not Logging</span>
+          <span className="font-semibold">{systemStats.logging}</span>
           <span>CPU: {systemStats.cpu}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -237,7 +299,7 @@ export default function XCALInterface() {
           <span>{systemStats.memory}</span>
         </div>
         <div className="ml-auto">
-          <span>sires : 2025-11-28 12:37, 3 hours left, AMD : 2025-05-1</span>
+          <span>sires : {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}, AMD : 2025-05-1</span>
         </div>
       </div>
     </div>

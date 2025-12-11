@@ -1,282 +1,234 @@
-import { useEffect, useState, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '@/utils/api'
-import type { SignalingRecord } from '@/types'
 
 interface SignalingMessage {
-  time: string
+  id: string
+  timestamp: string
   ueNet: string
   channel: string
   message: string
-  details?: any
+  direction?: string
+  hexData?: string
+  jsonData?: any
 }
 
 export default function XCALSignalingViewer({ sessionId }: { sessionId: string | null }) {
   const [messages, setMessages] = useState<SignalingMessage[]>([])
   const [selectedMessage, setSelectedMessage] = useState<SignalingMessage | null>(null)
   const [filter, setFilter] = useState('')
-  const [isPaused, setIsPaused] = useState(false)
-  const [showDetail, setShowDetail] = useState(true)
-  const [showElapsedTime, setShowElapsedTime] = useState(false)
-  const [fontSize, setFontSize] = useState(12)
-  const messagesEndRef = useRef<HTMLTableRowElement>(null)
+  const [showHex, setShowHex] = useState(false)
+  const [showJson, setShowJson] = useState(true)
+  const [autoScroll, setAutoScroll] = useState(true)
 
   useEffect(() => {
-    if (!sessionId || isPaused) return
+    if (!sessionId) return
 
-    const interval = setInterval(async () => {
+    const fetchMessages = async () => {
       try {
-        const records = await api.getRecords(sessionId, 0, 100)
-        const newMessages: SignalingMessage[] = records.content.map(r => ({
-          time: new Date(r.timestamp).toLocaleTimeString(),
-          ueNet: r.layer || 'UNKNOWN',
-          channel: r.protocol || 'UNKNOWN',
-          message: r.messageType || 'Unknown Message',
-          details: r.payloadJson
+        const data = await api.getRecords(sessionId, { page: 0, size: 100 })
+        const formattedMessages: SignalingMessage[] = (data.content || []).map((record: any) => ({
+          id: record.id,
+          timestamp: record.timestamp || new Date().toLocaleTimeString(),
+          ueNet: record.ueNet || 'UL DCCH',
+          channel: record.channel || 'PCCH',
+          message: record.message || record.messageType || 'Unknown',
+          direction: record.direction || '→',
+          hexData: record.hexData || generateMockHex(),
+          jsonData: record.payload || record.data
         }))
-        setMessages(prev => [...prev, ...newMessages].slice(-1000)) // Keep last 1000
+        setMessages(formattedMessages)
       } catch (err) {
-        console.error('Failed to fetch messages:', err)
+        console.error('Failed to fetch signaling messages:', err)
       }
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [sessionId, isPaused])
-
-  useEffect(() => {
-    if (!isPaused) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, isPaused])
 
-  const filteredMessages = messages.filter(m =>
-    !filter || m.message.toLowerCase().includes(filter.toLowerCase()) ||
-    m.channel.toLowerCase().includes(filter.toLowerCase())
-  )
+    fetchMessages()
+    const interval = setInterval(fetchMessages, 2000)
+    return () => clearInterval(interval)
+  }, [sessionId])
 
-  const handleExport = () => {
-    const csv = [
-      ['Time', 'UE-NET', 'Channel', 'Message'].join(','),
-      ...filteredMessages.map(m => [m.time, m.ueNet, m.channel, m.message].join(','))
-    ].join('\n')
-    
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `signaling_${sessionId}_${Date.now()}.csv`
-    a.click()
+  const generateMockHex = () => {
+    const lines = []
+    for (let i = 0; i < 10; i++) {
+      const hex = Array.from({ length: 16 }, () => 
+        Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+      ).join(' ')
+      lines.push(`${(i * 16).toString(16).padStart(4, '0')}: ${hex}`)
+    }
+    return lines.join('\n')
   }
 
-  const handleClear = () => {
-    setMessages([])
-    setSelectedMessage(null)
+  const filteredMessages = messages.filter(msg =>
+    msg.message.toLowerCase().includes(filter.toLowerCase()) ||
+    msg.channel.toLowerCase().includes(filter.toLowerCase())
+  )
+
+  const formatJson = (data: any) => {
+    if (!data) return 'No data available'
+    try {
+      return JSON.stringify(data, null, 2)
+    } catch {
+      return String(data)
+    }
   }
 
   return (
-    <div className="h-full bg-white flex flex-col">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 border-b border-gray-300">
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-600">Message Filter:</label>
-          <select className="px-2 py-1 border border-gray-300 rounded text-xs">
-            <option>None</option>
-            <option>RRC</option>
-            <option>NAS</option>
-            <option>MAC</option>
-          </select>
+    <div className="h-full flex bg-gray-900 text-white">
+      {/* Left Message List */}
+      <div className="w-2/5 border-r border-gray-700 flex flex-col">
+        {/* Filter Bar */}
+        <div className="p-3 bg-gray-800 border-b border-gray-700">
+          <div className="flex gap-2 mb-2">
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Filtering
+            </button>
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Filtering 2
+            </button>
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Pause
+            </button>
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Export
+            </button>
+          </div>
+          <div className="flex gap-2 mb-2">
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Hex
+            </button>
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Vertically
+            </button>
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Clear
+            </button>
+            <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">
+              Find
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 text-xs">
+              <input
+                type="checkbox"
+                checked={showHex}
+                onChange={(e) => setShowHex(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>Show SIP</span>
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" className="w-4 h-4" />
+              <span>Free Size</span>
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" className="w-4 h-4" />
+              <span>Step1</span>
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" className="w-4 h-4" />
+              <span>Step2</span>
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" className="w-4 h-4" />
+              <span>Step3</span>
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" className="w-4 h-4" />
+              <span>SACCH Report</span>
+            </label>
+          </div>
         </div>
 
-        <button
-          onClick={() => setFilter('')}
-          className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50"
-        >
-          Filtering
-        </button>
-        <button className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">
-          Filtering2
-        </button>
-        <button
-          onClick={() => setIsPaused(!isPaused)}
-          className={`px-3 py-1 border border-gray-300 rounded text-xs ${
-            isPaused ? 'bg-yellow-100' : 'bg-white hover:bg-gray-50'
-          }`}
-        >
-          {isPaused ? 'Resume' : 'Pause'}
-        </button>
-        <button
-          onClick={handleExport}
-          className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50"
-        >
-          Export
-        </button>
-        <button className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">
-          Hex
-        </button>
-        <button className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">
-          Vertically
-        </button>
-        <button
-          onClick={handleClear}
-          className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50"
-        >
-          Clear
-        </button>
-        <button className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">
-          Find
-        </button>
-        <button className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">
-          String Color Setting
-        </button>
-
-        <div className="ml-auto flex items-center gap-4">
-          <label className="flex items-center gap-1 text-xs">
-            <input
-              type="checkbox"
-              checked={showDetail}
-              onChange={(e) => setShowDetail(e.target.checked)}
-            />
-            Detail
-          </label>
-          <label className="flex items-center gap-1 text-xs">
-            <input
-              type="checkbox"
-              checked={showElapsedTime}
-              onChange={(e) => setShowElapsedTime(e.target.checked)}
-            />
-            Show Elapsed Time
-          </label>
-        </div>
-      </div>
-
-      {/* Secondary Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-1 bg-gray-50 border-b border-gray-300">
-        <label className="flex items-center gap-1 text-xs">
-          <input type="checkbox" />
-          Show SIP
-        </label>
-        <label className="text-xs text-gray-600">Font Size:</label>
-        <input
-          type="number"
-          value={fontSize}
-          onChange={(e) => setFontSize(Number(e.target.value))}
-          className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
-          min="8"
-          max="20"
-        />
-        <label className="flex items-center gap-1 text-xs ml-4">
-          <input type="checkbox" />
-          Show Step1
-        </label>
-        <label className="flex items-center gap-1 text-xs">
-          <input type="checkbox" />
-          Step2
-        </label>
-        <label className="flex items-center gap-1 text-xs">
-          <input type="checkbox" />
-          Step3
-        </label>
-        <label className="flex items-center gap-1 text-xs">
-          <input type="checkbox" />
-          SATCH Report
-        </label>
-      </div>
-
-      {/* Dual Pane Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Pane - Message List */}
-        <div className="flex-1 border-r border-gray-300 overflow-auto bg-white">
-          <table className="w-full text-xs" style={{ fontSize: `${fontSize}px` }}>
-            <thead className="sticky top-0 bg-gray-100 border-b border-gray-300">
+        {/* Message Table */}
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-700 sticky top-0">
               <tr>
-                <th className="text-left p-2 font-semibold">Time</th>
-                <th className="text-left p-2 font-semibold">UE-NET</th>
-                <th className="text-left p-2 font-semibold">Channel</th>
-                <th className="text-left p-2 font-semibold">Message</th>
+                <th className="text-left p-2 border-r border-gray-600">Time</th>
+                <th className="text-left p-2 border-r border-gray-600">UE NET</th>
+                <th className="text-left p-2 border-r border-gray-600">Channel</th>
+                <th className="text-left p-2">Message</th>
               </tr>
             </thead>
             <tbody>
               {filteredMessages.map((msg, idx) => (
                 <tr
-                  key={idx}
+                  key={msg.id}
                   onClick={() => setSelectedMessage(msg)}
-                  className={`border-b border-gray-200 cursor-pointer hover:bg-blue-50 ${
-                    selectedMessage === msg ? 'bg-blue-100' : ''
+                  className={`cursor-pointer border-b border-gray-800 hover:bg-gray-750 ${
+                    selectedMessage?.id === msg.id ? 'bg-blue-900' : idx % 2 === 0 ? 'bg-gray-850' : 'bg-gray-900'
                   }`}
                 >
-                  <td className="p-2 font-mono">{msg.time}</td>
-                  <td className="p-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      msg.ueNet === 'RRC' ? 'bg-blue-100 text-blue-800' :
-                      msg.ueNet === 'NAS' ? 'bg-purple-100 text-purple-800' :
-                      msg.ueNet === 'MAC' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                  <td className="p-2 border-r border-gray-800 font-mono">
+                    <span className={msg.direction === '→' ? 'text-cyan-400' : 'text-pink-400'}>
+                      {msg.timestamp}
+                    </span>
+                    <span className="ml-1">{msg.direction}</span>
+                  </td>
+                  <td className="p-2 border-r border-gray-800">
+                    <span className={msg.ueNet.includes('UL') ? 'text-cyan-400' : 'text-pink-400'}>
                       {msg.ueNet}
                     </span>
                   </td>
+                  <td className="p-2 border-r border-gray-800">
+                    <span className="text-yellow-400">{msg.channel}</span>
+                  </td>
                   <td className="p-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      msg.channel === 'LTE' ? 'bg-green-100 text-green-800' :
-                      msg.channel === 'NR' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {msg.channel}
+                    <span className={msg.message.includes('5GNR') ? 'text-green-400' : 'text-white'}>
+                      {msg.message}
                     </span>
                   </td>
-                  <td className="p-2 font-semibold">{msg.message}</td>
                 </tr>
               ))}
-              <tr ref={messagesEndRef} />
             </tbody>
           </table>
         </div>
-
-        {/* Right Pane - Message Details */}
-        {showDetail && (
-          <div className="w-1/2 overflow-auto bg-gray-50 p-4">
-            {selectedMessage ? (
-              <div>
-                <div className="mb-4 pb-4 border-b border-gray-300">
-                  <h3 className="text-lg font-bold mb-2">{selectedMessage.message}</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-600">Time:</span>
-                      <span className="ml-2 font-mono">{selectedMessage.time}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Layer:</span>
-                      <span className="ml-2 font-semibold">{selectedMessage.ueNet}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Channel:</span>
-                      <span className="ml-2 font-semibold">{selectedMessage.channel}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedMessage.details && (
-                  <div>
-                    <h4 className="text-sm font-bold mb-2">Message Details:</h4>
-                    <pre className="bg-white p-3 rounded border border-gray-300 text-xs overflow-auto">
-                      {JSON.stringify(selectedMessage.details, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                Select a message to view details
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Status Bar */}
-      <div className="px-4 py-1 bg-gray-100 border-t border-gray-300 text-xs text-gray-600">
-        Total Messages: {filteredMessages.length} | 
-        {isPaused && <span className="ml-2 text-yellow-600 font-bold">PAUSED</span>}
-        {filter && <span className="ml-2">Filter: {filter}</span>}
+      {/* Right Detail Panel */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Tabs */}
+        <div className="flex bg-gray-800 border-b border-gray-700">
+          <button
+            onClick={() => setShowJson(true)}
+            className={`px-4 py-2 text-sm ${showJson ? 'bg-gray-700 border-b-2 border-blue-500' : 'hover:bg-gray-750'}`}
+          >
+            Message Details
+          </button>
+          <button
+            onClick={() => setShowJson(false)}
+            className={`px-4 py-2 text-sm ${!showJson ? 'bg-gray-700 border-b-2 border-blue-500' : 'hover:bg-gray-750'}`}
+          >
+            Hex Dump
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-4 bg-black">
+          {!selectedMessage ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Select a message to view details
+            </div>
+          ) : showJson ? (
+            <div className="font-mono text-xs">
+              <div className="mb-4">
+                <div className="text-blue-400 mb-2">Message: {selectedMessage.message}</div>
+                <div className="text-gray-400 mb-2">Time: {selectedMessage.timestamp}</div>
+                <div className="text-gray-400 mb-2">Channel: {selectedMessage.channel}</div>
+              </div>
+              <pre className="text-green-400 whitespace-pre-wrap">
+                {formatJson(selectedMessage.jsonData)}
+              </pre>
+            </div>
+          ) : (
+            <div className="font-mono text-xs">
+              <div className="text-gray-400 mb-4">Hex Dump - {selectedMessage.message}</div>
+              <pre className="text-green-400 whitespace-pre">
+                {selectedMessage.hexData}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
