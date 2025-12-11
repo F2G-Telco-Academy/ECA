@@ -10,6 +10,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSelectCategory, theme = 'light' }: SidebarProps) {
+  const [openSection, setOpenSection] = useState<'devices' | 'signaling' | 'kpis' | 'messages' | null>('devices')
+
   const messageCategories = useMemo(
     () => [
       { key: 'rrc', label: 'RRC Connection' },
@@ -34,72 +36,118 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
         <div className="text-[11px] text-gray-400">Analyzer</div>
       </div>
 
-      <div className="flex-1 overflow-auto px-3 py-2">
-        <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Device Manager</div>
-        <div className="space-y-2 mb-4">
-          {slots.map((slotIdx) => {
-            const device = devices[slotIdx]
-            const isConnected = !!device
-            const active = isConnected && selectedDevice === device.deviceId
-            return (
-              <button
-                key={slotIdx}
-                onClick={() => {
-                  if (device) onDeviceSelect(device.deviceId)
-                }}
-                className={`w-full flex items-center justify-between px-3 py-3 text-sm rounded border ${
-                  active
-                    ? 'bg-slate-800 text-white border-slate-700'
-                    : isConnected
-                      ? 'bg-slate-900 text-gray-200 border-slate-800 hover:bg-slate-800'
-                      : 'bg-gray-900 text-gray-400 border-gray-800 cursor-default'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      isConnected ? 'bg-green-500' : 'bg-gray-500'
+      <div className="flex-1 overflow-auto px-3 py-2 space-y-4">
+        {/* Device Manager */}
+        <div>
+          <button
+            className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-gray-900"
+            onClick={() => setOpenSection(openSection === 'devices' ? null : 'devices')}
+          >
+            <span className="flex items-center gap-2 text-gray-200">
+              <span className="w-4 text-center">📱</span> Device Manager
+            </span>
+            <span className="text-gray-400">{openSection === 'devices' ? '▾' : '▸'}</span>
+          </button>
+          {openSection === 'devices' && (
+            <div className="mt-2 space-y-2">
+              {slots.map((slotIdx) => {
+                const device = devices[slotIdx]
+                const isConnected = !!device
+                const active = isConnected && selectedDevice === device.deviceId
+                return (
+                  <button
+                    key={slotIdx}
+                    onClick={() => {
+                      if (device) onDeviceSelect(device.deviceId)
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-3 text-sm rounded border ${
+                      active
+                        ? 'bg-slate-800 text-white border-slate-700'
+                        : isConnected
+                          ? 'bg-slate-900 text-gray-200 border-slate-800 hover:bg-slate-800'
+                          : 'bg-gray-900 text-gray-400 border-gray-800 cursor-default'
                     }`}
-                  />
-                  <div className="flex flex-col text-left leading-tight">
-                    <span>Mobile {slotIdx + 1}</span>
-                    <span className="text-[11px] text-gray-300">
-                      {isConnected ? device.model || device.deviceId : 'Not connected'}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isConnected ? 'bg-green-500' : 'bg-gray-500'
+                        }`}
+                      />
+                      <div className="flex flex-col text-left leading-tight">
+                        <span>Mobile {slotIdx + 1}</span>
+                        <span className="text-[11px] text-gray-300">
+                          {isConnected ? device.model || device.deviceId : 'Not connected'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-gray-400 capitalize">
+                      {isConnected ? device.status?.toLowerCase?.() || 'connected' : ''}
                     </span>
-                  </div>
-                </div>
-                <span className="text-[11px] text-gray-400 capitalize">
-                  {isConnected ? device.status?.toLowerCase?.() || 'connected' : ''}
-                </span>
-              </button>
-            )
-          })}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        <div className="space-y-3">
-          <div>
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Signaling</div>
-            <button
-              onClick={() => onSelectCategory?.(null)}
-              className="w-full text-left px-3 py-2 rounded hover:bg-gray-900 text-sm"
-            >
-              Live Signaling Messages
-            </button>
-          </div>
+        {/* Signaling */}
+        <div>
+          <button
+            className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-gray-900"
+            onClick={() => setOpenSection(openSection === 'signaling' ? null : 'signaling')}
+          >
+            <span className="flex items-center gap-2 text-gray-200">
+              <span className="w-4 text-center">📡</span> Signaling Messages
+            </span>
+            <span className="text-gray-400">{openSection === 'signaling' ? '▾' : '▸'}</span>
+          </button>
+          {openSection === 'signaling' && (
+            <div className="mt-2">
+              <button
+                onClick={() => onSelectCategory?.(null)}
+                className="w-full text-left px-3 py-2 rounded hover:bg-gray-900 text-sm text-gray-200"
+              >
+                Live Signaling Messages
+              </button>
+            </div>
+          )}
+        </div>
 
-          <div>
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">KPIs</div>
-            <div className="space-y-1 text-sm text-gray-300 px-3">
+        {/* KPIs */}
+        <div>
+          <button
+            className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-gray-900"
+            onClick={() => setOpenSection(openSection === 'kpis' ? null : 'kpis')}
+          >
+            <span className="flex items-center gap-2 text-gray-200">
+              <span className="w-4 text-center">📊</span> KPIs
+            </span>
+            <span className="text-gray-400">{openSection === 'kpis' ? '▾' : '▸'}</span>
+          </button>
+          {openSection === 'kpis' && (
+            <div className="space-y-1 text-sm text-gray-300 px-3 py-2">
               <div>CSSR</div>
               <div>RSRP</div>
               <div>RSRQ</div>
               <div>SINR</div>
             </div>
-          </div>
+          )}
+        </div>
 
-          <div>
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Messages</div>
-            <div className="space-y-1">
+        {/* Messages */}
+        <div>
+          <button
+            className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-gray-900"
+            onClick={() => setOpenSection(openSection === 'messages' ? null : 'messages')}
+          >
+            <span className="flex items-center gap-2 text-gray-200">
+              <span className="w-4 text-center">💬</span> Messages
+            </span>
+            <span className="text-gray-400">{openSection === 'messages' ? '▾' : '▸'}</span>
+          </button>
+          {openSection === 'messages' && (
+            <div className="space-y-1 py-2">
               {messageCategories.map((cat) => (
                 <button
                   key={cat.key}
@@ -110,7 +158,7 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
                 </button>
               ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
