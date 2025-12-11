@@ -31,6 +31,8 @@ export default function MultiPanelGrid({ sessionId }: { sessionId: string | null
   const [selectedPanel, setSelectedPanel] = useState<number | null>(null)
 
   const renderPanelContent = (panel: Panel) => {
+    const sid = sessionId || '1'
+    
     if (panel.content === 'none') {
       return (
         <div className="h-full flex items-center justify-center text-gray-400 text-6xl font-bold">
@@ -41,21 +43,21 @@ export default function MultiPanelGrid({ sessionId }: { sessionId: string | null
 
     switch (panel.content) {
       case 'rf-summary':
-        return <RFSummary sessionId={sessionId} />
+        return <RFSummary sessionId={sid} />
       case 'signaling':
-        return <SignalingViewer sessionId={sessionId} />
+        return <SignalingViewer sessionId={sid} />
       case 'tabulated':
-        return <TabulatedKPIView sessionId={sessionId} kpiType={panel.kpiType || 'General'} />
+        return <TabulatedKPIView sessionId={sid} kpiType={panel.kpiType || 'General'} />
       case 'user-table':
-        return <UserDefinedTable sessionId={sessionId} />
+        return <UserDefinedTable sessionId={sid} />
       case 'graph':
-        return <GraphView sessionId={sessionId} />
+        return <GraphView sessionId={sid} />
       case 'terminal':
-        return <TerminalViewer sessionId={sessionId} />
+        return <TerminalViewer sessionId={sid} />
       case 'qualcomm':
-        return <QualcommViewer sessionId={sessionId} />
+        return <QualcommViewer sessionId={sid} />
       case 'map':
-        return <MapView sessionId={sessionId} />
+        return <MapView sessionId={sid} />
       default:
         return <div className="h-full flex items-center justify-center text-gray-400">None</div>
     }

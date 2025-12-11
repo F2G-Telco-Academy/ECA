@@ -31,8 +31,6 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
     smartapp: false,
     autocallkpi: false
   })
-    autocallkpi: false
-  })
   const [search, setSearch] = useState('')
 
   useEffect(() => {
