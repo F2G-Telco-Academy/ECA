@@ -272,85 +272,67 @@ export default function SignalingPage({
           <p className="text-sm text-gray-500">Sélectionnez un device et démarrez la capture.</p>
         </div>
 
+        {/* Barre d'état + actions regroupées */}
         <div className={`px-4 sm:px-6 py-3 border-b flex flex-wrap items-center gap-3 ${headerBg}`}>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-            <span>{devices?.length || 0} Devices Connected</span>
+          <div className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white shadow-sm">
+            <span className={`w-2 h-2 rounded-full ${capturing ? "bg-green-500" : "bg-gray-400"}`} />
+            <span className="font-semibold">{capturing ? "Capturing" : "Idle"}</span>
+            <span className="text-gray-500 text-xs">Device: {selectedDevice || "None"}</span>
+            <span className="text-gray-500 text-xs">Port: {lastComPort}</span>
+            <span className="text-gray-500 text-xs">Durée: {formatDuration(captureStartTs)}</span>
+            <span className="text-gray-500 text-xs">Packets: {messages.length}</span>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {(devices || []).map((d, idx) => (
-              <button
-                key={d.deviceId}
-                title={`Port diag: ${lastComPort}`}
-                onClick={() => onSelectDevice(d.deviceId)}
-                className={`px-3 py-1.5 rounded border text-xs whitespace-nowrap flex items-center gap-2 ${
-                  selectedDevice === d.deviceId
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-                }`}
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    d.connected ? "bg-green-500" : d.status?.toLowerCase().includes("ready") ? "bg-amber-400" : "bg-red-400"
-                  }`}
-                />
-                <span className="text-left leading-tight">
-                  <div className="font-semibold">{d.model || `Mobile ${idx + 1}`}</div>
-                  <div className="text-[11px] text-gray-500">{d.deviceId}</div>
-                </span>
-                <span className="text-[11px] text-gray-400">{d.status?.toLowerCase?.()}</span>
-                <button
-                  type="button"
-                  className="ml-1 px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const others = devices.filter((x) => x.deviceId !== d.deviceId)
-                    if (others[0]) onSelectDevice(others[0].deviceId)
-                  }}
-                >
-                  Swap
-                </button>
-              </button>
-            ))}
-          </div>
-          <div className="flex-1 min-w-[200px]">
+
+          <div className="flex items-center gap-2 flex-wrap ml-auto">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter messages..."
-              className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-w-[200px] bg-white border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <button
+              className={`px-4 py-2 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`}
+              onClick={() => setAutoScroll(!autoScroll)}
+            >
+              Auto Scroll
+            </button>
+            <button
+              className={`px-4 py-2 rounded border text-sm ${
+                selectedDevice && deviceConnected
+                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                  : "bg-gray-100 border-gray-200 text-gray-400"
+              }`}
+              disabled={!selectedDevice || !deviceConnected}
+              onClick={handleStartCapture}
+            >
+              Start Capture
+            </button>
+            <button
+              className={`px-4 py-2 rounded border text-sm ${
+                capturing ? "bg-red-100 text-red-700 border-red-200 hover:bg-red-200" : "bg-gray-100 border-gray-200 text-gray-400"
+              }`}
+              disabled={!capturing}
+              onClick={handleStopCapture}
+            >
+              Stop Capture
+            </button>
+            <button
+              className="px-4 py-2 rounded border text-sm bg-white border-gray-300 hover:border-gray-400"
+              onClick={handleRestartCapture}
+            >
+              Restart
+            </button>
+            <button className="px-4 py-2 rounded border text-sm bg-white border-gray-300 hover:border-gray-400" onClick={exportCapture}>
+              Export
+            </button>
+            <button
+              className="px-4 py-2 rounded border text-sm bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
+              onClick={() => setMessages([])}
+            >
+              Clear
+            </button>
           </div>
-          <button
-            className={`px-4 py-2 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`}
-            onClick={() => setAutoScroll(!autoScroll)}
-          >
-            Auto Scroll
-          </button>
-          <button
-            className={`px-4 py-2 rounded border text-sm ${
-              selectedDevice && deviceConnected
-                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                : "bg-gray-100 border-gray-200 text-gray-400"
-            }`}
-            disabled={!selectedDevice || !deviceConnected}
-            onClick={handleStartCapture}
-          >
-            Start Capture
-          </button>
-          <button
-            className={`px-4 py-2 rounded border text-sm ${
-              capturing ? "bg-red-100 text-red-700 border-red-200 hover:bg-red-200" : "bg-gray-100 border-gray-200 text-gray-400"
-            }`}
-            disabled={!capturing}
-            onClick={handleStopCapture}
-          >
-            Stop Capture
-          </button>
-          <button className="px-4 py-2 rounded border text-sm bg-white border-gray-300 hover:border-gray-400" onClick={exportCapture}>
-            Save Capture
-          </button>
         </div>
 
         {!selectedDevice ? (
@@ -359,13 +341,7 @@ export default function SignalingPage({
           <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col border-r border-gray-200">
               <div className={`flex flex-wrap items-center gap-3 px-4 py-2 text-xs text-gray-700 border-b ${toolbarBg}`}>
-                <span className={`px-2 py-1 rounded-full font-semibold ${capturing ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                  {capturing ? "Capturing" : "Idle"}
-                </span>
-                <span>Device: {selectedDevice || "None"}</span>
-                <span>Port: {lastComPort}</span>
-                <span>Durée: {formatDuration(captureStartTs)}</span>
-                <span>Packets: {messages.length}</span>
+                <span>Filtres :</span>
                 <select
                   className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
                   value={directionFilter}
@@ -384,33 +360,15 @@ export default function SignalingPage({
                   <option value="RRC">RRC</option>
                   <option value="NAS">NAS</option>
                 </select>
-                <div className="flex items-center gap-2 ml-auto">
-                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={handleRestartCapture}>
-                    Restart capture
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    className="px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 text-xs"
+                    onClick={() => setFullscreenTable(true)}
+                  >
+                    Fullscreen
                   </button>
-                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={() => setCapturing((v) => !v)}>
-                    {capturing ? "Pause" : "Resume"}
-                  </button>
-                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={exportCapture}>
-                    Export
-                  </button>
-                  <button className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 rounded" onClick={() => setMessages([])}>
-                    Clear
-                  </button>
-                  <button className={`px-3 py-1 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`} onClick={() => setAutoScroll(!autoScroll)}>
-                    Auto Scroll
-                  </button>
+                  <span className="text-gray-500">Messages: {filteredMessages.length}</span>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500">
-                <span>Table</span>
-                <button
-                  className="px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100"
-                  onClick={() => setFullscreenTable(true)}
-                >
-                  Fullscreen
-                </button>
               </div>
 
               <div
@@ -418,7 +376,7 @@ export default function SignalingPage({
                 className={`flex-1 overflow-auto bg-white max-h-[720px] ${fullscreenTable ? "fixed inset-4 z-50 border shadow-lg" : ""}`}
               >
                 {fullscreenTable && (
-                  <div className="flex justify-end px-4 py-2">
+                  <div className="flex justify-end px-4 py-2 bg-white border-b border-gray-200">
                     <button
                       className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 text-sm"
                       onClick={() => setFullscreenTable(false)}
@@ -473,8 +431,19 @@ export default function SignalingPage({
             </div>
 
             <div className="w-full md:w-96 bg-gray-50 flex flex-col">
-              <div className="border-b border-gray-200 px-4 py-2 bg-white">
+              <div className="border-b border-gray-200 px-4 py-2 bg-white flex items-center justify-between">
                 <div className="text-xs font-semibold text-gray-600">Message Details</div>
+                {selectedMsg && (
+                  <button
+                    className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedMsg.details || "")
+                      pushToast("Copied", "success")
+                    }}
+                  >
+                    Copy
+                  </button>
+                )}
               </div>
               <div className="flex-1 overflow-auto p-4">
                 {selectedMsg ? (
