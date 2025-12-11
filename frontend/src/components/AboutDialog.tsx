@@ -15,7 +15,8 @@ export default function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
         
         <div className="p-6 space-y-4">
           <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">ECA</div>
+            <img src="/logo.png" alt="ECA Logo" className="w-24 h-24 mx-auto mb-3" />
+            <div className="text-2xl font-bold text-blue-600 mb-2">Extended Cellular Analyzer</div>
             <div className="text-sm text-gray-600">Version 0.1.0</div>
           </div>
 
