@@ -96,31 +96,56 @@ export default function AnalyzerInterface() {
   }
 
   const renderTabContent = (tab: Tab) => {
-    const sessionId = currentSession?.id?.toString() || selectedDevices[0] || '1'
+    const sessionId = currentSession?.id?.toString() || selectedDevices[0] || null
 
-    switch (tab.type) {
-      case 'multi-panel':
-        return <MultiPanelGrid sessionId={sessionId} />
-      case 'grid':
-        return <MultiDeviceGrid devices={devices} onDeviceSelect={(id) => setSelectedDevices([id])} />
-      case 'rf-summary':
-        return <RFSummary sessionId={sessionId} />
-      case 'signaling':
-        return <SignalingViewer sessionId={sessionId} />
-      case 'tabulated':
-        return <TabulatedKPIView sessionId={sessionId} kpiType={tab.kpiType || 'General'} />
-      case 'user-table':
-        return <UserDefinedTable sessionId={sessionId} />
-      case 'map':
-        return <MapView sessionId={sessionId} />
-      case 'graph':
-        return <GraphView sessionId={sessionId} />
-      case 'terminal':
-        return <TerminalViewer sessionId={sessionId} />
-      case 'qualcomm':
-        return <QualcommViewer sessionId={sessionId} />
-      default:
-        return <div className="h-full flex items-center justify-center text-gray-400">Select a view from sidebar</div>
+    // Show message if no session/device selected
+    if (!sessionId && tab.type !== 'multi-panel' && tab.type !== 'grid') {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📱</div>
+            <div className="text-lg mb-2">No Device Selected</div>
+            <div className="text-sm">Please select a device from the sidebar and start a session</div>
+          </div>
+        </div>
+      )
+    }
+
+    try {
+      switch (tab.type) {
+        case 'multi-panel':
+          return <MultiPanelGrid sessionId={sessionId} />
+        case 'grid':
+          return <MultiDeviceGrid devices={devices} onDeviceSelect={(id) => setSelectedDevices([id])} />
+        case 'rf-summary':
+          return <RFSummary sessionId={sessionId} />
+        case 'signaling':
+          return <SignalingViewer sessionId={sessionId} />
+        case 'tabulated':
+          return <TabulatedKPIView sessionId={sessionId} kpiType={tab.kpiType || 'General'} />
+        case 'user-table':
+          return <UserDefinedTable sessionId={sessionId} />
+        case 'map':
+          return <MapView sessionId={sessionId} />
+        case 'graph':
+          return <GraphView sessionId={sessionId} />
+        case 'terminal':
+          return <TerminalViewer sessionId={sessionId} />
+        case 'qualcomm':
+          return <QualcommViewer sessionId={sessionId} />
+        default:
+          return <div className="h-full flex items-center justify-center text-gray-400">Select a view from sidebar</div>
+      }
+    } catch (error) {
+      return (
+        <div className="h-full flex items-center justify-center text-red-400">
+          <div className="text-center">
+            <div className="text-4xl mb-4">⚠️</div>
+            <div className="text-lg mb-2">Error Loading View</div>
+            <div className="text-sm">{error instanceof Error ? error.message : 'Unknown error'}</div>
+          </div>
+        </div>
+      )
     }
   }
 

@@ -171,82 +171,82 @@ export default function QualcommViewer({ sessionId }: { sessionId: string | null
                 <span className="text-cyan-400">"messageType"</span>: <span className="text-yellow-400">"{selectedMessage.messageType}"</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"version"</span>: <span className="text-green-400">{selectedMessage.details.version}</span>,
+                <span className="text-cyan-400">"version"</span>: <span className="text-green-400">{selectedMessage.details?.version}</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"rrc_rel"</span>: <span className="text-green-400">{selectedMessage.details.rrc_rel}</span>,
+                <span className="text-cyan-400">"rrc_rel"</span>: <span className="text-green-400">{selectedMessage.details?.rrc_rel}</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"rrc_ver_major"</span>: <span className="text-green-400">{selectedMessage.details.rrc_ver_major}</span>,
+                <span className="text-cyan-400">"rrc_ver_major"</span>: <span className="text-green-400">{selectedMessage.details?.rrc_ver_major}</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"rrc_ver_minor"</span>: <span className="text-green-400">{selectedMessage.details.rrc_ver_minor}</span>,
+                <span className="text-cyan-400">"rrc_ver_minor"</span>: <span className="text-green-400">{selectedMessage.details?.rrc_ver_minor}</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"nas_data_length"</span>: <span className="text-green-400">{selectedMessage.details.nas_data_length}</span>,
+                <span className="text-cyan-400">"nas_data_length"</span>: <span className="text-green-400">{selectedMessage.details?.nas_data_length}</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"pdu_num"</span>: <span className="text-green-400">{selectedMessage.details.pdu_num}</span>,
+                <span className="text-cyan-400">"pdu_num"</span>: <span className="text-green-400">{selectedMessage.details?.pdu_num}</span>,
               </div>
               <div className="pl-4">
-                <span className="text-cyan-400">"pdu_len"</span>: <span className="text-green-400">{selectedMessage.details.pdu_len}</span>,
+                <span className="text-cyan-400">"pdu_len"</span>: <span className="text-green-400">{selectedMessage.details?.pdu_len}</span>,
               </div>
               <div className="pl-4">
                 <span className="text-cyan-400">"measResult"</span>: {'{'}
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"rsrp"</span>: <span className="text-green-400">{selectedMessage.details.measResult.rsrp}</span>,
+                <span className="text-cyan-400">"rsrp"</span>: <span className="text-green-400">{selectedMessage.details?.measResult.rsrp}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"rsrq"</span>: <span className="text-green-400">{selectedMessage.details.measResult.rsrq}</span>,
+                <span className="text-cyan-400">"rsrq"</span>: <span className="text-green-400">{selectedMessage.details?.measResult.rsrq}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"sinr"</span>: <span className="text-green-400">{selectedMessage.details.measResult.sinr}</span>
+                <span className="text-cyan-400">"sinr"</span>: <span className="text-green-400">{selectedMessage.details?.measResult.sinr}</span>
               </div>
               <div className="pl-4">{'}'}, </div>
               <div className="pl-4">
                 <span className="text-cyan-400">"serving_cell"</span>: {'{'}
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"pci"</span>: <span className="text-green-400">{selectedMessage.details.serving_cell.pci}</span>,
+                <span className="text-cyan-400">"pci"</span>: <span className="text-green-400">{selectedMessage.details?.serving_cell.pci}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"earfcn"</span>: <span className="text-green-400">{selectedMessage.details.serving_cell.earfcn}</span>,
+                <span className="text-cyan-400">"earfcn"</span>: <span className="text-green-400">{selectedMessage.details?.serving_cell.earfcn}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"band"</span>: <span className="text-green-400">{selectedMessage.details.serving_cell.band}</span>
+                <span className="text-cyan-400">"band"</span>: <span className="text-green-400">{selectedMessage.details?.serving_cell.band}</span>
               </div>
               <div className="pl-4">{'}'}, </div>
               <div className="pl-4">
                 <span className="text-cyan-400">"mac_params"</span>: {'{'}
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"ul_index"</span>: <span className="text-green-400">{selectedMessage.details.mac_params.ul_index}</span>,
+                <span className="text-cyan-400">"ul_index"</span>: <span className="text-green-400">{selectedMessage.details?.mac_params.ul_index}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"dl_index"</span>: <span className="text-green-400">{selectedMessage.details.mac_params.dl_index}</span>,
+                <span className="text-cyan-400">"dl_index"</span>: <span className="text-green-400">{selectedMessage.details?.mac_params.dl_index}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"rnti"</span>: <span className="text-yellow-400">"{selectedMessage.details.mac_params.rnti}"</span>,
+                <span className="text-cyan-400">"rnti"</span>: <span className="text-yellow-400">"{selectedMessage.details?.mac_params.rnti}"</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"harq_id"</span>: <span className="text-green-400">{selectedMessage.details.mac_params.harq_id}</span>
+                <span className="text-cyan-400">"harq_id"</span>: <span className="text-green-400">{selectedMessage.details?.mac_params.harq_id}</span>
               </div>
               <div className="pl-4">{'}'}, </div>
               <div className="pl-4">
                 <span className="text-cyan-400">"phy_params"</span>: {'{'}
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"num_prb"</span>: <span className="text-green-400">{selectedMessage.details.phy_params.num_prb}</span>,
+                <span className="text-cyan-400">"num_prb"</span>: <span className="text-green-400">{selectedMessage.details?.phy_params.num_prb}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"mcs"</span>: <span className="text-green-400">{selectedMessage.details.phy_params.mcs}</span>,
+                <span className="text-cyan-400">"mcs"</span>: <span className="text-green-400">{selectedMessage.details?.phy_params.mcs}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"num_layers"</span>: <span className="text-green-400">{selectedMessage.details.phy_params.num_layers}</span>,
+                <span className="text-cyan-400">"num_layers"</span>: <span className="text-green-400">{selectedMessage.details?.phy_params.num_layers}</span>,
               </div>
               <div className="pl-8">
-                <span className="text-cyan-400">"cqi"</span>: <span className="text-green-400">{selectedMessage.details.phy_params.cqi}</span>
+                <span className="text-cyan-400">"cqi"</span>: <span className="text-green-400">{selectedMessage.details?.phy_params.cqi}</span>
               </div>
               <div className="pl-4">{'}'}</div>
               <div className="text-blue-400">{'}'}</div>
