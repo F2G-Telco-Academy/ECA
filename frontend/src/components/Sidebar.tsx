@@ -27,8 +27,8 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
   )
 
   const panelBg =
-    theme === 'dark' ? 'bg-slate-900 text-gray-100 border-slate-800' : 'bg-slate-900 text-gray-100 border-gray-900'
-  const itemHover = theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-800'
+    theme === 'dark' ? 'bg-slate-900 text-gray-100 border-slate-800' : 'bg-slate-800 text-gray-100 border-slate-700'
+  const itemHover = theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-700'
   const slots = [0, 1, 2, 3] // four placeholders
 
   return (
