@@ -95,7 +95,11 @@ public class CaptureOrchestrationService {
         // Detect COM ports on Windows, use USB on Linux
         List<String> args;
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            String comPort = selectAvailableComPort(pythonCmd, preferredComPort);
+            // Always prefer the diag port detected by DiagnosticModeChecker
+            String comPort = preferredComPort;
+            if (comPort == null || comPort.isBlank()) {
+                comPort = selectAvailableComPort(pythonCmd, preferredComPort);
+            }
 
             if (comPort != null) {
                 log.info("Using COM port {}", comPort);
