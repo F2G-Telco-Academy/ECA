@@ -403,5 +403,14 @@ export const api = {
   // Create EventSource for signaling messages
   createSignalingStream(sessionId: number): EventSource {
     return new EventSource(`${API_BASE}/sessions/${sessionId}/signaling`)
+  },
+
+  // ========== FILE DOWNLOAD ==========
+  
+  // Download converted PCAP file
+  async downloadConvertedFile(pcapPath: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/offline/download?path=${encodeURIComponent(pcapPath)}`)
+    if (!res.ok) throw new Error('Failed to download file')
+    return res.blob()
   }
 }
