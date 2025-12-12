@@ -41,6 +41,8 @@ public class OfflineLogConversionService {
         args.add(inputLog.toString());
         args.add("-F");
         args.add(outputPcap.toString());
+        args.add("-L");
+        args.add("ip,mac,rlc,pdcp,rrc,nas");  // GSMTAP layers
         
         String pythonPath = PlatformUtils.resolvePythonPath(config.getTools().getScat().getPythonPath());
         

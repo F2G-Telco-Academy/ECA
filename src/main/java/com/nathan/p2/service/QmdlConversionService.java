@@ -153,17 +153,18 @@ public class QmdlConversionService {
     }
     
     /**
-     * Convert using SCAT tool
+     * Convert using SCAT tool with GSMTAP headers
      */
     private void convertWithScat(Path input, Path output, Path converter) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(
-            converter.toString(),
-            "-t", "qmdl",
-            "-F", "pcap_gsmtap",
-            input.toString(),
-            "-o", output.toString()
+            "python3",
+            "-m", "scat.main",
+            "-t", "qc",
+            "-d", input.toString(),
+            "-F", output.toString(),
+            "-L", "ip,mac,rlc,pdcp,rrc,nas"
         );
-        
+        pb.directory(new File("./scat"));
         executeConversion(pb, "scat");
     }
     

@@ -63,14 +63,15 @@ class FileConverter:
             raise ValueError(f"Conversion not supported for {file_type}")
 
     def _convert_qualcomm(self, input_file, output_file):
-        """Convert Qualcomm QMDL/QMDL2 to PCAP"""
+        """Convert Qualcomm QMDL/QMDL2 to PCAP with GSMTAP headers"""
         print(f"Converting Qualcomm file: {input_file}")
-        # SCAT command: scat -t qc -d input.qmdl --pcap-file output.pcap
+        # SCAT command: scat -t qc -d input.qmdl -F output.pcap -L layers
         cmd = [
             sys.executable, '-m', 'scat.main',
             '-t', 'qc',  # Qualcomm parser
             '-d', input_file,
-            '--pcap-file', output_file
+            '-F', output_file,  # Write GSMTAP to PCAP file
+            '-L', 'ip,mac,rlc,pdcp,rrc,nas',  # All protocol layers
         ]
         try:
             result = subprocess.run(
@@ -90,14 +91,15 @@ class FileConverter:
             return None
 
     def _convert_samsung(self, input_file, output_file):
-        """Convert Samsung SDM to PCAP"""
+        """Convert Samsung SDM to PCAP with GSMTAP headers"""
         print(f"Converting Samsung file: {input_file}")
-        # SCAT command: scat -t sec -d input.sdm --pcap-file output.pcap
+        # SCAT command: scat -t sec -d input.sdm -F output.pcap -L layers
         cmd = [
             sys.executable, '-m', 'scat.main',
             '-t', 'sec',  # Samsung parser
             '-d', input_file,
-            '--pcap-file', output_file
+            '-F', output_file,  # Write GSMTAP to PCAP file
+            '-L', 'ip,mac,rlc,pdcp,rrc,nas',  # All protocol layers
         ]
         try:
             result = subprocess.run(
