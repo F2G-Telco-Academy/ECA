@@ -309,7 +309,7 @@ export default function SignalingPage({
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-green-500" /> {devices.filter((d) => d.connected !== false).length} connecté(s)
                 </span>
-                {lastComPort && <span className="px-2 py-1 bg-gray-100 rounded-full text-gray-600">Port diag : {lastComPort}</span>}
+                {lastComPort && <span className="px-2 py-1 bg-gray-100 rounded-full text-gray-600">Diag port: {lastComPort}</span>}
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
