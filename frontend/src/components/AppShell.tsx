@@ -1,24 +1,29 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import TopBar from '@/components/TopBar'
-import Sidebar from '@/components/Sidebar'
+import AnalyzerSidebar from '@/components/AnalyzerSidebar'
 import StatusBar from '@/components/StatusBar'
 import SignalingPage from '@/components/SignalingPage'
 import ConvertView from '@/views/ConvertView'
 import VisualizeView from '@/views/VisualizeView'
-import AnalyzeView from '@/views/AnalyzeView'
 import type { Device } from '@/types'
+
+// Dynamically import the XCAL-structured analyzer
+const AnalyzerInterface = dynamic(() => import('@/pages/analyzer'), { ssr: false })
 
 type TabId = 'signaling' | 'convert' | 'visualize' | 'analyze'
 
 export default function AppShell() {
   const [tab, setTab] = useState<TabId>('signaling')
   const [selectedDevice, setSelectedDevice] = useState<string|null>(null)
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([])
   const [packetCount, setPacketCount] = useState(0)
   const [devices, setDevices] = useState<Device[]>([])
   const [category, setCategory] = useState<string|null>(null)
+  const [selectedView, setSelectedView] = useState<string|null>(null)
 
-  // Load devices periodically to fill chips and sidebar
+  // Load devices periodically
   useEffect(() => {
     const load = async () => {
       try {
@@ -34,7 +39,7 @@ export default function AppShell() {
     return () => clearInterval(i)
   }, [])
 
-  // Sync tab with URL hash (no full page navigation)
+  // Sync tab with URL hash
   useEffect(() => {
     const applyHash = () => {
       const h = (window.location.hash || '').replace('#','') as TabId
@@ -47,8 +52,15 @@ export default function AppShell() {
 
   const onTabChange = (t: TabId) => {
     setTab(t)
-    // update hash for back/forward without redirect
     if (typeof window !== 'undefined') window.location.hash = t
+  }
+
+  const handleViewSelect = (view: string) => {
+    setSelectedView(view)
+    // Auto-switch to analyze tab when a view is selected
+    if (tab !== 'analyze') {
+      onTabChange('analyze')
+    }
   }
 
   const content = useMemo(() => {
@@ -58,7 +70,7 @@ export default function AppShell() {
       case 'visualize':
         return <VisualizeView />
       case 'analyze':
-        return <AnalyzeView />
+        return <AnalyzerInterface />
       case 'signaling':
       default:
         return (
@@ -77,9 +89,18 @@ export default function AppShell() {
     <div className="h-screen flex flex-col bg-white text-gray-800">
       <TopBar currentPage={tab} onPageChange={onTabChange} />
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar fixed */}
-        <Sidebar devices={devices} selectedDevice={selectedDevice} onDeviceSelect={setSelectedDevice} onSelectCategory={setCategory} />
-        {/* Main content area swaps only the embedded view */}
+        {/* AnalyzerSidebar for all tabs (XCAL structure with device slots) */}
+        {tab !== 'analyze' && (
+          <AnalyzerSidebar
+            onDeviceSelect={(ids) => {
+              setSelectedDevices(ids)
+              if (ids.length > 0) setSelectedDevice(ids[0])
+            }}
+            onKpiSelect={setCategory}
+            onViewSelect={handleViewSelect}
+          />
+        )}
+        {/* Main content area */}
         <div className="flex-1 overflow-hidden">{content}</div>
       </div>
       <StatusBar />
