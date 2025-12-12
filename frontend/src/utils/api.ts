@@ -396,5 +396,12 @@ export const api = {
     })
     if (!res.ok) throw new Error('Failed to perform clustering')
     return res.json()
+  },
+
+  // ========== SIGNALING STREAM ==========
+  
+  // Create EventSource for signaling messages
+  createSignalingStream(sessionId: number): EventSource {
+    return new EventSource(`${API_BASE}/sessions/${sessionId}/signaling`)
   }
 }
