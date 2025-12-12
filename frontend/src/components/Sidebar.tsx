@@ -104,17 +104,6 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
           </div>
         </div>
 
-        {/* Signaling */}
-        <div>
-          <button
-            className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2 px-3'} py-2 text-sm rounded ${itemHover}`}
-            onClick={() => onSelectCategory?.(null)}
-          >
-            <span className="text-gray-500">🔔</span>
-            {!collapsed && <span className="text-gray-700 font-semibold">Signaling Messages</span>}
-          </button>
-        </div>
-
         {/* KPIs */}
         <div>
           <button
