@@ -173,7 +173,7 @@ public class QmdlConversionService {
     private void executeConversion(ProcessBuilder pb, String toolName) throws Exception {
         pb.redirectErrorStream(true);
         Process process = pb.start();
-        
+
         // Capture output for logging
         StringBuilder output = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
@@ -183,21 +183,21 @@ public class QmdlConversionService {
                 log.debug("[{}] {}", toolName, line);
             }
         }
-        
+
         boolean finished = process.waitFor(120, TimeUnit.SECONDS);
-        
+
         if (!finished) {
             process.destroyForcibly();
             throw new RuntimeException(toolName + " conversion timeout after 120 seconds");
         }
-        
+
         if (process.exitValue() != 0) {
             throw new RuntimeException(
-                toolName + " conversion failed with exit code " + process.exitValue() + 
+                toolName + " conversion failed with exit code " + process.exitValue() +
                 "\nOutput: " + output.toString());
         }
     }
-    
+
     /**
      * Fallback: Convert using Python script
      */
@@ -206,20 +206,25 @@ public class QmdlConversionService {
         String pythonScript = createPythonConversionScript(input, output);
         Path scriptFile = Files.createTempFile("qmdl_convert_", ".py");
         Files.write(scriptFile, pythonScript.getBytes());
-        
+
         try {
-            ProcessBuilder pb = new ProcessBuilder("python3", scriptFile.toString());
+            // Use generic 'python' so it works on Windows where 'python3' may not exist
+            ProcessBuilder pb = new ProcessBuilder("python", scriptFile.toString());
             executeConversion(pb, "python-qmdl-converter");
             return output;
         } finally {
             Files.deleteIfExists(scriptFile);
         }
     }
-    
+
     /**
      * Create Python conversion script
      */
     private String createPythonConversionScript(Path input, Path output) {
+        // Escape backslashes so Windows paths are safe inside Python string literals
+        String safeInput = input.toString().replace("\\", "\\\\");
+        String safeOutput = output.toString().replace("\\", "\\\\");
+
         return String.format("""
             #!/usr/bin/env python3
             import struct
@@ -273,18 +278,18 @@ public class QmdlConversionService {
             
             if __name__ == '__main__':
                 sys.exit(convert_qmdl_to_pcap('%s', '%s'))
-            """, input.toString(), output.toString());
+            """, safeInput, safeOutput);
     }
-    
+
     /**
      * Check if QMDL file needs conversion
      */
     public boolean isQmdlFile(Path file) {
         String filename = file.getFileName().toString().toLowerCase();
-        return filename.endsWith(".qmdl") || filename.endsWith(".qmdl2") || 
+        return filename.endsWith(".qmdl") || filename.endsWith(".qmdl2") ||
                filename.endsWith(".dlf") || filename.endsWith(".sdm");
     }
-    
+
     /**
      * Auto-convert if QMDL file detected
      */

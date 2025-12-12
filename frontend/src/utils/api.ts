@@ -258,9 +258,14 @@ export const api = {
   },
 
   // Offline Log Conversion
-  async convertOfflineLog(file: File): Promise<{ success: boolean; message: string; pcapPath: string }> {
+  async convertOfflineLog(
+    file: File,
+    options?: { inputFormat?: string; outputFormat?: string }
+  ): Promise<{ success: boolean; message: string; pcapPath: string }> {
     const formData = new FormData()
     formData.append('file', file)
+    if (options?.inputFormat) formData.append('inputFormat', options.inputFormat)
+    if (options?.outputFormat) formData.append('outputFormat', options.outputFormat)
     
     const res = await fetch(`${API_BASE}/offline/convert`, {
       method: 'POST',
@@ -268,6 +273,12 @@ export const api = {
     })
     if (!res.ok) throw new Error('Failed to convert log')
     return res.json()
+  },
+
+  async downloadConvertedFile(pcapPath: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/offline/download?path=${encodeURIComponent(pcapPath)}`)
+    if (!res.ok) throw new Error('Failed to download converted file')
+    return res.blob()
   },
 
   // Real-time Streaming (SSE)

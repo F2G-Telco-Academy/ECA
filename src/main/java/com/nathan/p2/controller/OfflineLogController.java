@@ -5,15 +5,18 @@ import com.nathan.p2.service.QmdlConversionService;
 import com.nathan.p2.service.EnhancedKpiExtractionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.io.File;
 
 @Slf4j
 @RestController
@@ -73,6 +76,25 @@ public class OfflineLogController {
                         null
                     ));
                 });
+        });
+    }
+
+    @GetMapping("/download")
+    public Mono<ResponseEntity<Resource>> downloadConvertedFile(@RequestParam("path") String pcapPath) {
+        return Mono.fromCallable(() -> {
+            Path path = Paths.get(pcapPath);
+            if (!Files.exists(path)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] data = Files.readAllBytes(path);
+            ByteArrayResource resource = new ByteArrayResource(data);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName().toString())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentLength(data.length)
+                    .body(resource);
         });
     }
     

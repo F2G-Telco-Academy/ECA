@@ -1,74 +1,125 @@
 "use client"
-import { useState } from "react"
-import { api } from "@/utils/api"
+import { useState } from 'react'
+import { api } from '@/utils/api'
+import { platformApi } from '@/utils/tauri-api'
 
 export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
   const [file, setFile] = useState<File | null>(null)
   const [converting, setConverting] = useState(false)
   const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [queue, setQueue] = useState<{ name: string; size: number; type: string; status: string; progress: number }[]>([])
+  const [error, setError] = useState<string|null>(null)
+  const [queue, setQueue] = useState<{name:string; size:number; type:string; status:string; progress:number}[]>([])
+  const [inputFormat, setInputFormat] = useState<string>('')
+  const [outputFormat, setOutputFormat] = useState<string>('')
+  const [isDragging, setIsDragging] = useState(false)
+  const [lastPcapPath, setLastPcapPath] = useState<string | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+
+  // Background/card styles derived from theme
+  const bgMain = theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+  const cardBg = theme === 'dark' ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900 border-gray-200'
 
   const handleConvert = async () => {
-    if (!file) return
-    setConverting(true)
-    setError(null)
-    setResult(null)
-    setQueue((prev) => [
-      { name: file.name, size: file.size, type: file.name.split(".").pop()?.toUpperCase() || "LOG", status: "Converting", progress: 25 },
-      ...prev,
-    ])
+    if (!file) { alert('Please select a file first'); return }
+    if (!inputFormat) { alert('Please choose an input format'); return }
+    if (!outputFormat) { alert('Please choose an output format'); return }
+
+    setConverting(true); setError(null); setResult(null)
+    setQueue(prev => [{ name: file.name, size: file.size, type: inputFormat.toUpperCase(), status: 'Converting', progress: 15 }, ...prev])
     try {
-      const res = await api.convertOfflineLog(file)
+      const res = await api.convertOfflineLog(file, { inputFormat, outputFormat })
       setResult(res)
-      setQueue((prev) => prev.map((it) => (it.name === file.name ? { ...it, status: "Completed", progress: 100 } : it)))
+
+      // Capture PCAP path whenever backend returns one
+      if (res?.pcapPath) {
+        setLastPcapPath(res.pcapPath)
+      }
+
+      // Only treat as logical success in the UI if backend says success
+      if (!res?.success) {
+        setError(res?.message || 'Conversion failed')
+        setQueue(prev => prev.map(it => it.name===file.name ? { ...it, status: 'Failed', progress: 0 } : it))
+        alert('Conversion failed: ' + (res?.message || 'Unknown error'))
+      } else {
+        setQueue(prev => prev.map(it => it.name===file.name ? { ...it, status: 'Completed', progress: 100 } : it))
+        alert(`Conversion successful! PCAP saved to: ${res.pcapPath}`)
+      }
     } catch (err: any) {
-      setError(err.message || "Conversion failed")
-      setQueue((prev) => prev.map((it) => (it.name === file?.name ? { ...it, status: "Failed", progress: 0 } : it)))
-    } finally {
-      setConverting(false)
+      setError(err.message || 'Conversion failed')
+      setQueue(prev => prev.map(it => it.name===file?.name ? { ...it, status: 'Failed', progress: 0 } : it))
+      alert('Conversion failed: ' + (err?.message || 'Unknown error'))
+    } finally { setConverting(false) }
+  }
+
+  const handleSave = async () => {
+    if (!lastPcapPath) return
+    try {
+      // Always provide a direct download to local storage
+      const blob = await api.downloadConvertedFile(lastPcapPath)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const filename = lastPcapPath.split(/[\\/]/).pop() || 'converted.pcap'
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+
+      // Optional: additionally open the folder in Tauri environment
+      if (platformApi) {
+        try {
+          await platformApi.openFileLocation(lastPcapPath)
+          setSaveMessage(`Opened folder: ${filename}`)
+          setTimeout(() => setSaveMessage(null), 3500)
+        } catch {}
+      }
+      // If no platform open was attempted, still show a saved/downloaded confirmation
+      setSaveMessage(`Saved: ${filename}`)
+      setTimeout(() => setSaveMessage(null), 3500)
+    } catch (e: any) {
+      alert('Failed to open converted file location: ' + (e?.message || 'Unknown error'))
     }
   }
 
-  const renderQueueRow = (item: (typeof queue)[number], idx: number) => (
-    <tr key={`${item.name}-${idx}`} className="border-b border-gray-100">
-      <td className="px-3 py-2 font-mono text-gray-800">{item.name}</td>
-      <td className="px-3 py-2 text-gray-600">{item.type}</td>
-      <td className="px-3 py-2 text-right text-gray-600">{(item.size / 1024 / 1024).toFixed(2)} MB</td>
-      <td className="px-3 py-2">
-        <span
-          className={`px-2 py-0.5 rounded text-xs ${
-            item.status === "Completed"
-              ? "bg-green-100 text-green-700"
-              : item.status === "Failed"
-              ? "bg-red-100 text-red-700"
-              : "bg-blue-100 text-blue-700"
-          }`}
-        >
-          {item.status}
-        </span>
-      </td>
-      <td className="px-3 py-2">
-        <div className="w-full h-2 bg-gray-200 rounded">
-          <div
-            className={`h-2 rounded ${item.status === "Failed" ? "bg-red-400" : "bg-blue-500"}`}
-            style={{ width: `${item.progress}%` }}
-          />
-        </div>
-      </td>
-    </tr>
-  )
+  // Helpers
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
 
-  const bgMain = theme === 'dark' ? 'bg-slate-900 text-gray-100' : 'bg-white text-gray-800'
-  const cardBg = theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-  const dashedBg = theme === 'dark' ? 'border-slate-600 bg-slate-800/40' : 'border-gray-300 bg-white'
+  const renderQueueRow = (it: any, idx: number) => {
+    return (
+      <tr key={`${it.name}-${idx}`} className="border-b">
+        <td className="px-3 py-2">{it.name}</td>
+        <td className="px-3 py-2">{it.type}</td>
+        <td className="px-3 py-2 text-right">{formatBytes(it.size)}</td>
+        <td className="px-3 py-2">{it.status}</td>
+        <td className="px-3 py-2 w-48">
+          <div className="w-full bg-gray-200 h-2 rounded overflow-hidden">
+            <div
+              className={`${it.status === 'Failed' ? 'bg-red-500' : it.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500'} h-2`}
+              style={{ width: `${Math.max(0, Math.min(100, it.progress || 0))}%` }}
+            />
+          </div>
+        </td>
+      </tr>
+    )
+  }
 
-  const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center text-center text-gray-400 gap-2 py-4">
-      <div className="w-12 h-12 rounded-xl border border-dashed border-gray-400 flex items-center justify-center text-2xl">📁</div>
-      <div className="text-sm">Drop a file or click Browse</div>
-    </div>
-  )
+  const handleRemove = () => {
+    if (file) {
+      setFile(null)
+      setInputFormat('')
+      setOutputFormat('')
+      return
+    }
+
+    setQueue((q) => q.slice(1))
+  }
 
   return (
     <div className={`flex flex-col h-full pb-16 md:pb-0 ${bgMain}`}>
@@ -77,89 +128,136 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
         <p className="text-sm text-gray-500">Convert network capture files between different formats</p>
       </div>
 
-      <div className="px-6 py-3 border-b border-gray-200 flex items-center gap-2 text-sm">
-        <span className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full inline-block" />
-          <span>{4} Devices Connected</span>
-        </span>
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4].map((id) => (
-            <button key={id} className="px-3 py-1.5 rounded border bg-white text-xs text-gray-700 hover:border-gray-400">
-              Mobile {id}
-            </button>
-          ))}
-        </div>
+      {/* Toolbar */}
+      <div className="px-6 py-2 border-b border-gray-200 bg-gray-50 text-sm flex items-center gap-2">
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          onClick={() => {
+            // In browser: trigger file input (like Add)
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) fileInput.click();
+            // In Tauri: you could use dialog.open with a default path if needed
+          }}
+        >
+          📂 Open
+        </button>
+        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400" onClick={()=>document.getElementById('fileInput')?.click()}>➕ Add</button>
+        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400" onClick={() => handleRemove()}>➖ Remove</button>
+        <span className="mx-2 w-px h-5 bg-gray-200"/>
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          onClick={handleConvert}
+          disabled={!file || !inputFormat || !outputFormat || converting}
+        >
+          {converting ? '⏳ Converting' : '▶️ Start'}
+        </button>
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          disabled={!file || !inputFormat || !outputFormat}
+        >
+          ⏹ Stop
+        </button>
+        <span className="mx-2 w-px h-5 bg-gray-200"/>
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          disabled={!lastPcapPath}
+          onClick={handleSave}
+        >
+          💾 Save
+        </button>
+          {saveMessage && (
+            <div className="ml-3 px-3 py-1 rounded text-xs text-green-700 bg-green-50 border border-green-100">
+              {saveMessage}
+            </div>
+          )}
       </div>
 
-      <div className="p-4 sm:p-6 flex-1 flex flex-col gap-4 overflow-auto">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className={`flex-1 min-w-[280px] border rounded-lg p-4 ${cardBg}`}>
-            <div className="text-sm font-semibold text-gray-700 mb-3">Conversion Settings</div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <div className="text-xs text-gray-500 mb-1">Input Format</div>
-                <div className="grid grid-cols-1 gap-2">
-                  {["PCAP", "PCAPNG", "JSON", "XML"].map((format) => (
-                    <button
-                      key={format}
-                      className={`w-full px-3 py-2 rounded border text-sm ${
-                        format === "PCAP"
-                          ? "bg-black text-white border-black"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-                      }`}
-                    >
-                      {format}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <div className="text-gray-400 text-sm">→</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 mb-1">Output Format</div>
-                <div className="grid grid-cols-1 gap-2">
-                  {["CSV", "JSON", "XML", "TXT", "PCAP"].map((format) => (
-                    <button
-                      key={format}
-                      className={`w-full px-3 py-2 rounded border text-sm ${
-                        format === "CSV"
-                          ? "bg-black text-white border-black"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-                      }`}
-                    >
-                      {format}
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {/* Body */}
+      <div className="p-6 flex-1 flex flex-col gap-4 overflow-auto">
+        {/* Conversion Settings */}
+        <div className="border border-gray-200 rounded bg-white p-4">
+          <div className="text-sm font-semibold mb-4">Conversion Settings</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Input Format</div>
+              <select
+                value={inputFormat}
+                onChange={(e) => setInputFormat(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select input format</option>
+                <option value="qmdl">.qmdl</option>
+                <option value="qmdl2">.qmdl2</option>
+                <option value="sdm">.sdm</option>
+              </select>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Output Format</div>
+              <select
+                value={outputFormat}
+                onChange={(e) => setOutputFormat(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select output format</option>
+                <option value="pcap">.pcap</option>
+                <option value="txt">.txt</option>
+                <option value="csv">.csv</option>
+                <option value="json">.json</option>
+              </select>
             </div>
           </div>
+        </div>
 
-          <div className={`flex-1 min-w-[280px] border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center ${dashedBg}`}>
-            <div className="text-3xl mb-2 text-gray-400">☁</div>
-            <div className="text-sm font-semibold text-gray-700">Drop files here or click to upload</div>
-            <div className="text-xs text-gray-500">Supports PCAP, PCAPNG, JSON, XML files</div>
-            <label className="mt-4 inline-block px-4 py-2 bg-black text-white text-xs rounded cursor-pointer">
-              Browse Files
-              <input
-                id="fileInput"
-                type="file"
-                accept=".pcap,.pcapng,.json,.xml"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-            </label>
-            {file && <div className="mt-2 text-xs text-gray-600">{file.name}</div>}
-            {!file && <EmptyState />}
-            <button
-              onClick={handleConvert}
-              disabled={!file || converting}
-              className="mt-3 px-4 py-2 rounded bg-blue-600 text-white text-xs disabled:opacity-50"
-            >
-              {converting ? "Converting..." : "Start Conversion"}
-            </button>
+        {/* Upload area with drag & drop */}
+        <div
+          className={`border border-dashed border-gray-300 rounded ${isDragging ? 'bg-white' : 'bg-gray-50'} p-6 flex flex-col items-center justify-center text-center cursor-pointer`}
+          onClick={() => document.getElementById('fileInput')?.click()}
+          onDragEnter={(e: any) => { e.preventDefault(); setIsDragging(true) }}
+          onDragOver={(e: any) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragging(true) }}
+          onDragLeave={(e: any) => { e.preventDefault(); setIsDragging(false) }}
+          onDrop={(e: any) => {
+            e.preventDefault();
+            setIsDragging(false)
+            const files = Array.from(e.dataTransfer.files || []) as File[]
+            const valid = files.find(f => f.name.toLowerCase().endsWith('.qmdl') || f.name.toLowerCase().endsWith('.qmdl2') || f.name.toLowerCase().endsWith('.sdm'))
+            if (valid) {
+              setFile(valid)
+            }
+          }}
+        >
+          <div className={`w-10 h-10 mb-3 rounded-full border flex items-center justify-center ${isDragging ? 'border-blue-500 text-blue-500' : 'border-gray-300 text-gray-400'}`}>
+            ↓
           </div>
+          <div className="text-sm font-medium text-gray-700 mb-1">Drop files here or click to upload</div>
+          <div className="text-xs text-gray-500 mb-4">Supports .qmdl, .qmdl2, .sdm</div>
+          <label
+            htmlFor="fileInput"
+            className="inline-flex items-center px-4 py-1.5 rounded border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-100 cursor-pointer"
+          >
+            Browse Files
+          </label>
+          <input
+            id="fileInput"
+            type="file"
+            accept=".qmdl,.qmdl2,.sdm"
+            className="hidden"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+          {file && (
+            <div className="mt-3 text-xs text-gray-600 flex items-center justify-center gap-2">
+              <span>
+                Selected: <span className="font-mono">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(2)} MB)
+              </span>
+              <button
+                type="button"
+                className="ml-2 px-2 py-0.5 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-300"
+                aria-label="Remove selected file"
+                onClick={() => { setFile(null); setInputFormat(''); setOutputFormat(''); }}
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
 
         <div className={`border rounded-lg ${cardBg}`}>
@@ -191,8 +289,8 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
           </div>
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">Error: {error}</div>}
-        {result && (
+        {error && (<div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">Error: {error}</div>)}
+        {result && result.success && result.pcapPath && (
           <div className="p-3 bg-green-50 border border-green-200 rounded text-xs text-green-700">
             Conversion Successful – PCAP: <span className="font-mono">{result.pcapPath}</span>
           </div>
@@ -201,3 +299,4 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
     </div>
   )
 }
+
