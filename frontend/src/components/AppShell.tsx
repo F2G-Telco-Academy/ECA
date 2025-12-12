@@ -63,8 +63,8 @@ export default function AppShell() {
   // Get sessionId for views
   const sessionId = selectedDevices[0] || null
 
-  // Render view based on sidebar selection
-  const renderView = () => {
+  // Render content based on sidebar selection (works across ALL tabs)
+  const renderSidebarDrivenContent = () => {
     if (!sessionId) {
       return (
         <div className="h-full flex items-center justify-center text-gray-400">
@@ -77,7 +77,7 @@ export default function AppShell() {
       )
     }
 
-    // Map view names to components
+    // Map sidebar selections to components
     const viewMap: Record<string, any> = {
       'Signaling Message': () => import('@/components/SignalingViewer'),
       'Terminal Logs': () => import('@/components/TerminalViewer'),
@@ -104,35 +104,24 @@ export default function AppShell() {
   }
 
   const content = useMemo(() => {
-    switch(tab){
-      case 'convert':
-        return <ConvertView />
-      case 'visualize':
-        return <VisualizeView />
-      case 'analyze':
-        return <AnalyzeView sessionId={sessionId} />
-      case 'signaling':
-      default:
-        return renderView()
-    }
+    // Sidebar controls content on ALL tabs
+    return renderSidebarDrivenContent()
   }, [tab, selectedView, devices, selectedDevice, category, sessionId])
 
   return (
     <div className="h-screen flex flex-col bg-white text-gray-800">
       <TopBar currentPage={tab} onPageChange={onTabChange} />
       <div className="flex flex-1 overflow-hidden">
-        {/* AnalyzerSidebar for all tabs (XCAL structure with device slots) */}
-        {tab !== 'analyze' && (
-          <AnalyzerSidebar
-            onDeviceSelect={(ids) => {
-              setSelectedDevices(ids)
-              if (ids.length > 0) setSelectedDevice(ids[0])
-            }}
-            onKpiSelect={setCategory}
-            onViewSelect={handleViewSelect}
-          />
-        )}
-        {/* Main content area */}
+        {/* AnalyzerSidebar visible on ALL tabs */}
+        <AnalyzerSidebar
+          onDeviceSelect={(ids) => {
+            setSelectedDevices(ids)
+            if (ids.length > 0) setSelectedDevice(ids[0])
+          }}
+          onKpiSelect={setCategory}
+          onViewSelect={handleViewSelect}
+        />
+        {/* Main content area - driven by sidebar selection */}
         <div className="flex-1 overflow-hidden">{content}</div>
       </div>
       <StatusBar />

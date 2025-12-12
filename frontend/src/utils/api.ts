@@ -414,3 +414,14 @@ export const api = {
     return res.blob()
   }
 }
+
+  async uploadPcapForAnalysis(file: File): Promise<{ success: boolean; sessionId: string; kpisAvailable: string[]; message?: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const res = await fetch(`${API_BASE}/offline/analyze`, {
+      method: 'POST',
+      body: formData
+    })
+    return res.json()
+  },
