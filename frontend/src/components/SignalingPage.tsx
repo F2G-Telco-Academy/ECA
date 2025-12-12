@@ -247,10 +247,10 @@ export default function SignalingPage({
     }
   }
 
-  const bgMain = theme === "dark" ? "bg-slate-900 text-gray-100" : "bg-white text-gray-800"
+  const bgMain = theme === "dark" ? "bg-slate-900 text-gray-100" : "bg-slate-50 text-gray-800"
   const headerBg = theme === "dark" ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
-  const toolbarBg = theme === "dark" ? "bg-slate-900 border-slate-800" : "bg-gray-50 border-gray-200"
-  const rowOdd = theme === "dark" ? "odd:bg-slate-900" : "odd:bg-gray-50"
+  const panelBg = theme === "dark" ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200 shadow-sm"
+  const rowOdd = theme === "dark" ? "odd:bg-slate-900" : "odd:bg-slate-50"
 
   const formatDuration = (start: number | null) => {
     if (!start) return "00:00"
@@ -285,84 +285,104 @@ export default function SignalingPage({
   return (
     <div className={`flex h-full ${bgMain}`}>
       <div className="flex-1 flex flex-col">
-        <div className={`px-4 sm:px-6 py-4 border-b ${headerBg}`}>
-          <h1 className="text-lg font-semibold">Live Signaling Messages</h1>
-          <p className="text-sm text-gray-500">Select a device and start the capture.</p>
+        {/* Header */}
+        <div className={`px-5 py-4 border-b ${headerBg}`}>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-semibold">Live Signaling Messages</h1>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    capturing ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {capturing ? "Capturing" : "Idle"}
+                </span>
+                {captureStartTs && (
+                  <span className="text-xs text-gray-500">Duration: {formatDuration(captureStartTs)}</span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Sélectionne un appareil, lance la capture et surveille les messages RRC/NAS en direct.
+              </p>
+              <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500" /> {devices.filter((d) => d.connected !== false).length} connecté(s)
+                </span>
+                {lastComPort && <span className="px-2 py-1 bg-gray-100 rounded-full text-gray-600">Port diag : {lastComPort}</span>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition ${
+                  selectedDevice && deviceConnected
+                    ? capturing
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
+                disabled={!selectedDevice || !deviceConnected}
+                onClick={handleToggleCapture}
+              >
+                {capturing ? "Stop Capture" : "Start Capture"}
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 bg-white hover:border-gray-400 transition"
+                onClick={handleRestartCapture}
+              >
+                Restart
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 bg-white hover:border-gray-400 transition"
+                onClick={exportCapture}
+              >
+                Export
+              </button>
+              <button
+                className="px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+                onClick={() => setMessages([])}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Device chips + actions on one line */}
-        <div className={`px-4 sm:px-6 py-3 border-b flex items-center gap-3 flex-wrap ${headerBg}`}>
-          <div className="flex items-center gap-3 flex-wrap">
-            {(() => {
-              const connected = devices.filter((d) => d.connected !== false)
+        {/* Device chips */}
+        <div className="px-5 py-3 border-b bg-white flex items-center gap-2 flex-wrap">
+          {devices
+            .filter((d) => d.connected !== false)
+            .map((device, idx) => {
+              const isActive = selectedDevice === device.deviceId
+              const label = device.model || device.deviceId || `Device ${idx + 1}`
               return (
-                <>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    <span className="text-gray-700">
-                      {connected.length} Device{connected.length === 1 ? "" : "s"} Connected
-                    </span>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {connected.map((device, idx) => {
-                      const isActive = selectedDevice === device.deviceId
-                      const label = device.model || device.deviceId || `Device ${idx + 1}`
-                      const base = "px-4 py-2 rounded border text-sm"
-                      const cls = isActive
-                        ? `${base} border-blue-500 text-blue-700 bg-blue-50`
-                        : `${base} border-gray-300 text-gray-700 bg-white hover:bg-gray-100`
-                      return (
-                        <button
-                          key={device.deviceId || idx}
-                          className={cls}
-                          onClick={() => onSelectDevice(device.deviceId)}
-                          title={device.deviceId}
-                        >
-                          {label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </>
+                <button
+                  key={device.deviceId || idx}
+                  onClick={() => onSelectDevice(device.deviceId)}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                    isActive ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                  }`}
+                  title={device.deviceId}
+                >
+                  {label}
+                </button>
               )
-            })()}
-          </div>
-          <div className="flex items-center gap-2 flex-nowrap overflow-auto ml-auto">
+            })}
+          {!devices.some((d) => d.connected !== false) && (
+            <span className="text-sm text-gray-500">Aucun appareil connecté</span>
+          )}
+          <div className="ml-auto flex items-center gap-2">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter messages..."
-              className="min-w-[200px] bg-white border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Filtrer par message, proto ou device..."
+              className="min-w-[220px] bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button
-              className={`px-4 py-2 rounded border text-sm ${
-                selectedDevice && deviceConnected
-                  ? capturing
-                    ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
-                    : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                  : "bg-gray-100 border-gray-200 text-gray-400"
-              }`}
-              disabled={!selectedDevice || !deviceConnected}
-              onClick={handleToggleCapture}
-            >
-              {capturing ? "Stop Capture" : "Start Capture"}
-            </button>
-            <button
-              className="px-4 py-2 rounded border text-sm bg-white border-gray-300 hover:border-gray-400"
-              onClick={handleRestartCapture}
-            >
-              Restart
-            </button>
-            <button className="px-4 py-2 rounded border text-sm bg-white border-gray-300 hover:border-gray-400" onClick={exportCapture}>
-              Export
-            </button>
-            <button
-              className="px-4 py-2 rounded border text-sm bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
-              onClick={() => setMessages([])}
-            >
-              Clear
-            </button>
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <span className="px-2 py-1 rounded-full bg-gray-100">Messages : {filteredMessages.length}</span>
+              {capturing && <span className="px-2 py-1 rounded-full bg-green-100 text-green-700">Live</span>}
+            </div>
           </div>
         </div>
 
@@ -371,40 +391,58 @@ export default function SignalingPage({
         ) : (
           <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col border-r border-gray-200">
-              <div className={`flex flex-wrap items-center gap-3 px-4 py-2 text-xs text-gray-700 border-b ${toolbarBg}`}>
-                <span>Filters:</span>
-                <select
-                  className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
-                  value={directionFilter}
-                  onChange={(e) => setDirectionFilter(e.target.value as any)}
-                >
-                  <option value="ALL">All dir</option>
-                  <option value="UL">UL</option>
-                  <option value="DL">DL</option>
-                </select>
-                <select
-                  className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
-                  value={protocolFilter}
-                  onChange={(e) => setProtocolFilter(e.target.value as any)}
-                >
-                  <option value="ALL">All proto</option>
-                  <option value="RRC">RRC</option>
-                  <option value="NAS">NAS</option>
-                </select>
+              <div className="flex flex-wrap items-center gap-3 px-5 py-3 text-xs text-gray-700 border-b bg-white">
+                <span className="text-gray-500 font-semibold">Filtres :</span>
+                <div className="flex items-center gap-2">
+                  {["ALL", "UL", "DL"].map((dir) => (
+                    <button
+                      key={dir}
+                      onClick={() => setDirectionFilter(dir as any)}
+                      className={`px-3 py-1 rounded-full border text-xs font-semibold transition ${
+                        directionFilter === dir ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-white border-gray-200 text-gray-600 hover:border-gray-400"
+                      }`}
+                    >
+                      {dir === "ALL" ? "All dir" : dir}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  {["ALL", "RRC", "NAS"].map((proto) => (
+                    <button
+                      key={proto}
+                      onClick={() => setProtocolFilter(proto as any)}
+                      className={`px-3 py-1 rounded-full border text-xs font-semibold transition ${
+                        protocolFilter === proto
+                          ? "bg-blue-50 border-blue-400 text-blue-700"
+                          : "bg-white border-gray-200 text-gray-600 hover:border-gray-400"
+                      }`}
+                    >
+                      {proto === "ALL" ? "All proto" : proto}
+                    </button>
+                  ))}
+                </div>
                 <div className="ml-auto flex items-center gap-2">
+                  <label className="flex items-center gap-1 text-gray-500">
+                    <input
+                      type="checkbox"
+                      checked={autoScroll}
+                      onChange={(e) => setAutoScroll(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    Auto-scroll
+                  </label>
                   <button
-                    className="px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 text-xs"
+                    className="px-3 py-1 rounded-full border border-gray-300 bg-white hover:bg-gray-100 text-xs"
                     onClick={() => setFullscreenTable(true)}
                   >
                     Fullscreen
                   </button>
-                  <span className="text-gray-500">Messages: {filteredMessages.length}</span>
                 </div>
               </div>
 
               <div
                 ref={tableRef}
-                className={`flex-1 overflow-auto bg-white max-h-[720px] ${fullscreenTable ? "fixed inset-4 z-50 border shadow-lg" : ""}`}
+                className={`flex-1 overflow-auto ${fullscreenTable ? "fixed inset-4 z-50 border shadow-lg bg-white" : ""}`}
               >
                 {fullscreenTable && (
                   <div className="flex justify-end px-4 py-2 bg-white border-b border-gray-200">
@@ -418,52 +456,61 @@ export default function SignalingPage({
                 )}
                 {filteredMessages.length === 0 ? (
                   capturing ? (
-                    <div className="grid grid-cols-1 gap-2 p-4">
+                    <div className="p-5 space-y-3">
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="animate-pulse h-8 bg-gray-100 rounded" />
+                        <div key={i} className="animate-pulse h-10 bg-gray-100 rounded-lg" />
                       ))}
+                      <div className="text-xs text-gray-500">Capture en cours... en attente de messages.</div>
                     </div>
                   ) : (
-                    <EmptyState title="No messages yet" subtitle="Plug in diag mode then Start Capture" />
+                    <EmptyState title="Aucun message" subtitle="Lance une capture en mode diag pour voir les messages ici." />
                   )
                 ) : (
-                  <div className="overflow-auto">
-                    <table className="min-w-full text-xs font-mono">
-                      <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600 w-32">Time</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600 w-20">UE-NET</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600 w-32">Channel</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600">Message</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredMessages.map((msg) => (
-                          <tr
-                            key={msg.id}
-                            onClick={() => setSelectedMsg(msg)}
-                            className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${rowOdd} ${
-                              selectedMsg?.id === msg.id ? "bg-blue-50" : ""
-                            }`}
-                          >
-                            <td className="px-3 py-1.5 text-gray-600">{msg.timestamp}</td>
-                            <td className="px-3 py-1.5">
-                              <span className={msg.ueNet === "UL" ? "text-cyan-600" : "text-pink-600"}>{msg.direction}</span>
-                            </td>
-                            <td className={`px-3 py-1.5 ${getChannelColor(msg.channel)}`}>{msg.channel}</td>
-                            <td className={`px-3 py-1.5 ${getMessageColor(msg.message)}`}>{msg.message}</td>
+                  <div className="p-4">
+                    <div className="overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                      <table className="min-w-full text-xs font-mono">
+                        <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-600 w-32">Time</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-600 w-20">UE-NET</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-600 w-32">Channel</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-600">Message</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {filteredMessages.map((msg) => (
+                            <tr
+                              key={msg.id}
+                              onClick={() => setSelectedMsg(msg)}
+                              className={`border-b border-gray-100 hover:bg-blue-50 cursor-pointer ${rowOdd} ${
+                                selectedMsg?.id === msg.id ? "bg-blue-50" : ""
+                              }`}
+                            >
+                              <td className="px-3 py-2 text-gray-600">{msg.timestamp}</td>
+                              <td className="px-3 py-2">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-[11px] font-semibold ${
+                                    msg.ueNet === "UL" ? "bg-cyan-50 text-cyan-700" : "bg-pink-50 text-pink-700"
+                                  }`}
+                                >
+                                  {msg.direction}
+                                </span>
+                              </td>
+                              <td className={`px-3 py-2 ${getChannelColor(msg.channel)}`}>{msg.channel}</td>
+                              <td className={`px-3 py-2 ${getMessageColor(msg.message)}`}>{msg.message}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="w-full md:w-96 bg-gray-50 flex flex-col">
-              <div className="border-b border-gray-200 px-4 py-2 bg-white flex items-center justify-between">
-                <div className="text-xs font-semibold text-gray-600">Message Details</div>
+            <div className="w-full md:w-96 bg-slate-50 flex flex-col">
+              <div className={`border-b px-4 py-3 bg-white flex items-center justify-between`}>
+                <div className="text-sm font-semibold text-gray-700">Message Details</div>
                 {selectedMsg && (
                   <button
                     className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100"
@@ -479,23 +526,23 @@ export default function SignalingPage({
               <div className="flex-1 overflow-auto p-4">
                 {selectedMsg ? (
                   <div className="space-y-3 text-xs font-mono">
-                    <div className="bg-white rounded p-3 border border-gray-200">
+                    <div className={`${panelBg} rounded-lg p-3`}>
                       <div className="text-gray-500 mb-1">Timestamp</div>
                       <div className="text-gray-700">{selectedMsg.timestamp}</div>
                     </div>
-                    <div className="bg-white rounded p-3 border border-gray-200">
+                    <div className={`${panelBg} rounded-lg p-3`}>
                       <div className="text-gray-500 mb-1">Direction</div>
                       <div className={selectedMsg.ueNet === "UL" ? "text-cyan-600" : "text-pink-600"}>{selectedMsg.direction}</div>
                     </div>
-                    <div className="bg-white rounded p-3 border border-gray-200">
+                    <div className={`${panelBg} rounded-lg p-3`}>
                       <div className="text-gray-500 mb-1">Channel</div>
                       <div className={getChannelColor(selectedMsg.channel)}>{selectedMsg.channel}</div>
                     </div>
-                    <div className="bg-white rounded p-3 border border-gray-200">
+                    <div className={`${panelBg} rounded-lg p-3`}>
                       <div className="text-gray-500 mb-1">Message</div>
                       <div className={getMessageColor(selectedMsg.message)}>{selectedMsg.message}</div>
                     </div>
-                    <div className="bg-white rounded p-3 border border-gray-200">
+                    <div className={`${panelBg} rounded-lg p-3`}>
                       <div className="text-gray-500 mb-2">Details</div>
                       <pre className="text-gray-700 text-xs whitespace-pre-wrap">{selectedMsg.details}</pre>
                     </div>
