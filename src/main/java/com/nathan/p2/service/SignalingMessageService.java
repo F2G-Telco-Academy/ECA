@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -39,109 +40,115 @@ public class SignalingMessageService {
         
         // Find session directory (could be deviceId_timestamp format)
         Path baseDir = Paths.get(config.getStorage().getBaseDir());
-        Path pcapPath = null;
-        
-        try {
-            var session = sessionService.getSession(sessionId).block();
-            if (session != null && session.getSessionDir() != null) {
-                pcapPath = Paths.get(session.getSessionDir()).resolve("capture.pcap");
-            }
-            if (pcapPath == null || !Files.exists(pcapPath)) {
-                pcapPath = Files.list(baseDir)
-                    .filter(p -> p.getFileName().toString().contains(String.valueOf(sessionId)) || 
-                                p.resolve("capture.pcap").toFile().exists())
-                    .map(p -> p.resolve("capture.pcap"))
-                    .filter(Files::exists)
-                    .findFirst()
-                    .orElse(null);
-            }
-        } catch (Exception e) {
-            log.error("Error finding PCAP file", e);
-        }
-        
-        if (pcapPath == null || !pcapPath.toFile().exists()) {
-            log.warn("PCAP file not found for session {}, will emit mock data", sessionId);
-            // Emit mock signaling messages for testing
-            emitMockSignaling(sink);
-            return sink.asFlux();
-        }
 
-        try {
-            long size = Files.size(pcapPath);
-            if (size == 0) {
-                log.warn("PCAP file for session {} is empty, emitting mock data", sessionId);
-                emitMockSignaling(sink);
-                return sink.asFlux();
-            }
-        } catch (Exception e) {
-            log.error("Error inspecting PCAP file for session {}", sessionId, e);
-            emitMockSignaling(sink);
-            return sink.asFlux();
-        }
-        
-        try {
-            String tsharkPath = PlatformUtils.resolveTSharkPath(config.getTools().getTshark().getPath());
-            ProcessBuilder pb = new ProcessBuilder(
-                tsharkPath,
-                "-r", pcapPath.toString(),
-                "-T", "json",
-                "-d", "udp.port==4729,gsmtap",
-                "-Y", "gsmtap",
-                "-e", "frame.number",
-                "-e", "frame.time",
-                "-e", "gsmtap.channel",
-                "-e", "lte-rrc",
-                "-e", "nas-eps",
-                "-e", "nr-rrc"
-            );
-            
-            Process process = pb.start();
-            activeStreams.put(sessionId, process);
-            
-            new Thread(() -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    StringBuilder jsonBuilder = new StringBuilder();
-                    String line;
-                    
-                    while ((line = reader.readLine()) != null) {
-                        jsonBuilder.append(line);
-                    }
-                    
-                    String jsonContent = jsonBuilder.toString();
-                    if (jsonContent.isBlank()) {
-                        log.warn("No signaling packets decoded for session {}, emitting mock data", sessionId);
-                        emitMockSignaling(sink);
-                        sink.tryEmitComplete();
-                        return;
-                    }
-
-                    JsonNode packets = objectMapper.readTree(jsonContent);
-                    if (packets.isArray()) {
-                        for (JsonNode packet : packets) {
-                            SignalingMessageDto msg = parseSignalingMessage(packet);
-                            if (msg != null) {
-                                sink.tryEmitNext(msg);
+        Mono<Path> pcapPathMono = sessionService.getSession(sessionId)
+                .map(session -> Paths.get(session.getSessionDir()).resolve("capture.pcap"))
+                .filter(Files::exists)
+                .switchIfEmpty(Mono.defer(() -> Mono.fromCallable(() -> {
+                            try (var stream = Files.list(baseDir)) {
+                                return stream
+                                        .filter(p -> p.getFileName().toString().contains(String.valueOf(sessionId))
+                                                || p.resolve("capture.pcap").toFile().exists())
+                                        .map(p -> p.resolve("capture.pcap"))
+                                        .filter(Files::exists)
+                                        .findFirst()
+                                        .orElse(null);
                             }
-                        }
-                    } else {
-                        log.warn("Unexpected signaling output format for session {}, emitting mock data", sessionId);
-                        emitMockSignaling(sink);
-                    }
-                    
-                    sink.tryEmitComplete();
-                } catch (Exception e) {
-                    log.error("Error reading signaling stream", e);
+                        })
+                        .subscribeOn(Schedulers.boundedElastic())))
+                .subscribeOn(Schedulers.boundedElastic());
+
+        pcapPathMono.subscribe(pcapPath -> {
+            if (pcapPath == null || !Files.exists(pcapPath)) {
+                log.warn("PCAP file not found for session {}, will emit mock data", sessionId);
+                emitMockSignaling(sink);
+                sink.tryEmitComplete();
+                return;
+            }
+
+            try {
+                long size = Files.size(pcapPath);
+                if (size == 0) {
+                    log.warn("PCAP file for session {} is empty, emitting mock data", sessionId);
                     emitMockSignaling(sink);
                     sink.tryEmitComplete();
+                    return;
                 }
-            }).start();
-            
-        } catch (Exception e) {
-            log.error("Failed to start signaling stream", e);
+            } catch (Exception e) {
+                log.error("Error inspecting PCAP file for session {}", sessionId, e);
+                emitMockSignaling(sink);
+                sink.tryEmitComplete();
+                return;
+            }
+
+            try {
+                String tsharkPath = PlatformUtils.resolveTSharkPath(config.getTools().getTshark().getPath());
+                ProcessBuilder pb = new ProcessBuilder(
+                    tsharkPath,
+                    "-r", pcapPath.toString(),
+                    "-T", "json",
+                    "-d", "udp.port==4729,gsmtap",
+                    "-Y", "gsmtap",
+                    "-e", "frame.number",
+                    "-e", "frame.time",
+                    "-e", "gsmtap.channel",
+                    "-e", "lte-rrc",
+                    "-e", "nas-eps",
+                    "-e", "nr-rrc"
+                );
+
+                Process process = pb.start();
+                activeStreams.put(sessionId, process);
+
+                new Thread(() -> {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                        StringBuilder jsonBuilder = new StringBuilder();
+                        String line;
+
+                        while ((line = reader.readLine()) != null) {
+                            jsonBuilder.append(line);
+                        }
+
+                        String jsonContent = jsonBuilder.toString();
+                        if (jsonContent.isBlank()) {
+                            log.warn("No signaling packets decoded for session {}, emitting mock data", sessionId);
+                            emitMockSignaling(sink);
+                            sink.tryEmitComplete();
+                            return;
+                        }
+
+                        JsonNode packets = objectMapper.readTree(jsonContent);
+                        if (packets.isArray()) {
+                            for (JsonNode packet : packets) {
+                                SignalingMessageDto msg = parseSignalingMessage(packet);
+                                if (msg != null) {
+                                    sink.tryEmitNext(msg);
+                                }
+                            }
+                        } else {
+                            log.warn("Unexpected signaling output format for session {}, emitting mock data", sessionId);
+                            emitMockSignaling(sink);
+                        }
+
+                        sink.tryEmitComplete();
+                    } catch (Exception e) {
+                        log.error("Error reading signaling stream", e);
+                        emitMockSignaling(sink);
+                        sink.tryEmitComplete();
+                    }
+                }).start();
+
+            } catch (Exception e) {
+                log.error("Failed to start signaling stream", e);
+                emitMockSignaling(sink);
+                sink.tryEmitComplete();
+            }
+        }, error -> {
+            log.error("Error finding PCAP file", error);
             emitMockSignaling(sink);
             sink.tryEmitComplete();
-        }
-        
+        });
+
         return sink.asFlux()
             .doOnCancel(() -> stopStream(sessionId))
             .doOnError(e -> log.error("Signaling stream error", e));
