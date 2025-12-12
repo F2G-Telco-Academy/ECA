@@ -57,10 +57,7 @@ export default function AppShell() {
 
   const handleViewSelect = (view: string) => {
     setSelectedView(view)
-    // Auto-switch to analyze tab when a view is selected
-    if (tab !== 'analyze') {
-      onTabChange('analyze')
-    }
+    // Don't auto-switch tabs - let user stay on current tab
   }
 
   const content = useMemo(() => {
