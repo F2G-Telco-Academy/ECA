@@ -16,6 +16,9 @@ import reactor.core.publisher.Sinks;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -74,6 +77,7 @@ public class CaptureOrchestrationService {
     private Mono<ProcessHandle> startScatCapture(Session session, String preferredComPort) {
         Path sessionDir = Paths.get(session.getSessionDir());
         Path pcapOutput = sessionDir.resolve("capture.pcap");
+        Path scatLog = sessionDir.resolve("scat.log");
         
         String pythonCmd = System.getProperty("os.name").toLowerCase().contains("win") 
             ? "python" : "python3";
@@ -146,6 +150,7 @@ public class CaptureOrchestrationService {
                                         String formattedLine = String.format("[%s] %s", timestamp, line);
                                         log.debug("SCAT: {}", line);
                                         sink.tryEmitNext(formattedLine);
+                                        appendLineSafe(scatLog, formattedLine);
                                     },
                                     error -> {
                                         log.error("Error streaming SCAT logs", error);
@@ -165,6 +170,7 @@ public class CaptureOrchestrationService {
                                         String formattedLine = String.format("[%s] ERROR: %s", timestamp, line);
                                         log.warn("SCAT ERROR: {}", line);
                                         sink.tryEmitNext(formattedLine);
+                                        appendLineSafe(scatLog, formattedLine);
                                     },
                                     error -> log.error("Error streaming SCAT stderr", error)
                             );
@@ -344,15 +350,16 @@ public class CaptureOrchestrationService {
                 return port;
             }
         }
-        // Si aucun port n'a pu être testé avec succès, tente quand même le préféré ou le premier détecté
+        // Si aucun port n'a passé le test, on force le preferred ou le premier détecté
         if (preferredComPort != null && !preferredComPort.isBlank()) {
-            log.warn("Using preferred COM port {} even though availability check failed", preferredComPort);
+            log.warn("Forcing preferred COM port {} despite availability check failure", preferredComPort);
             return preferredComPort;
         }
         if (!comPorts.isEmpty()) {
-            log.warn("Using first detected COM port {} even though availability check failed", comPorts.get(0));
+            log.warn("Forcing first detected COM port {} despite availability check failure", comPorts.get(0));
             return comPorts.get(0);
         }
+        log.warn("No COM port available, will fall back to USB mode");
         return null;
     }
 
@@ -375,6 +382,20 @@ public class CaptureOrchestrationService {
         } catch (Exception e) {
             log.warn("COM port {} not available: {}", port, e.getMessage());
             return false;
+        }
+    }
+
+    private void appendLineSafe(Path logFile, String line) {
+        try {
+            Files.createDirectories(logFile.getParent());
+            Files.writeString(
+                    logFile,
+                    line + System.lineSeparator(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND
+            );
+        } catch (IOException e) {
+            log.debug("Unable to write SCAT log line to file {}: {}", logFile, e.getMessage());
         }
     }
 }

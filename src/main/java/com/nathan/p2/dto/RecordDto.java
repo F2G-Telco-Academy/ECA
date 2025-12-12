@@ -22,8 +22,10 @@ public class RecordDto {
     private String direction;     // UL, DL
     private String messageType;   // e.g., "RRC Connection Setup", "Attach Request"
     private String layer;         // L1, L2, L3
+    private String rat;           // LTE / NR / WCDMA ...
     private Integer frameNumber;
     private String hexData;       // Raw hex dump
     private String decodedData;   // Human-readable decoded message
+    private String payloadJson;   // Raw JSON payload (if present)
     private Integer length;
 }

@@ -93,6 +93,9 @@ export default function SignalingPage({
       es.onerror = (err) => {
         console.warn("Signaling stream error", err)
         es.close()
+        setCapturing(false)
+        setSessionId(null)
+        pushToast("Stream error. Check diag mode and restart capture.", "error")
       }
       return () => es.close()
     }
@@ -208,8 +211,13 @@ export default function SignalingPage({
     if (sessionId) {
       try {
         await api.stopSession(sessionId)
-      } catch {}
+      } catch (err: any) {
+        if (err?.status !== 409) {
+          pushToast(err?.message || "Failed to stop capture", "error")
+        }
+      }
     }
+    setSessionId(null)
     setCapturing(false)
     streamRef.current?.close()
     setCaptureStartTs(null)
@@ -222,11 +230,21 @@ export default function SignalingPage({
         await api.stopSession(sessionId)
       } catch {}
     }
+    setSessionId(null)
     setMessages([])
     setSelectedMsg(null)
     setCaptureStartTs(null)
     setCapturing(false)
     await handleStartCapture()
+  }
+
+  const handleToggleCapture = async () => {
+    if (!selectedDevice || !deviceConnected) return
+    if (capturing) {
+      await handleStopCapture()
+    } else {
+      await handleStartCapture()
+    }
   }
 
   const bgMain = theme === "dark" ? "bg-slate-900 text-gray-100" : "bg-white text-gray-800"
@@ -249,7 +267,7 @@ export default function SignalingPage({
   const EmptyState = ({ title, subtitle }: { title: string; subtitle: string }) => (
     <div className="flex-1 flex flex-col items-center justify-center text-center">
       <div className="w-16 h-16 mb-4 rounded-xl border border-dashed border-gray-400 flex items-center justify-center text-3xl text-gray-400">
-        📡
+        dY"
       </div>
       <div className="text-sm font-semibold text-gray-500">{title}</div>
       <div className="text-xs text-gray-400">{subtitle}</div>
@@ -259,7 +277,7 @@ export default function SignalingPage({
         target="_blank"
         rel="noreferrer"
       >
-        Voir la doc diag (*#0808*)
+        See diagnostic steps (*#0808*)
       </a>
     </div>
   )
@@ -269,21 +287,47 @@ export default function SignalingPage({
       <div className="flex-1 flex flex-col">
         <div className={`px-4 sm:px-6 py-4 border-b ${headerBg}`}>
           <h1 className="text-lg font-semibold">Live Signaling Messages</h1>
-          <p className="text-sm text-gray-500">Sélectionnez un device et démarrez la capture.</p>
+          <p className="text-sm text-gray-500">Select a device and start the capture.</p>
         </div>
 
-        {/* Barre d'état + actions regroupées */}
-        <div className={`px-4 sm:px-6 py-3 border-b flex flex-wrap items-center gap-3 ${headerBg}`}>
-          <div className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white shadow-sm">
-            <span className={`w-2 h-2 rounded-full ${capturing ? "bg-green-500" : "bg-gray-400"}`} />
-            <span className="font-semibold">{capturing ? "Capturing" : "Idle"}</span>
-            <span className="text-gray-500 text-xs">Device: {selectedDevice || "None"}</span>
-            <span className="text-gray-500 text-xs">Port: {lastComPort}</span>
-            <span className="text-gray-500 text-xs">Durée: {formatDuration(captureStartTs)}</span>
-            <span className="text-gray-500 text-xs">Packets: {messages.length}</span>
+        {/* Device chips + actions on one line */}
+        <div className={`px-4 sm:px-6 py-3 border-b flex items-center gap-3 flex-wrap ${headerBg}`}>
+          <div className="flex items-center gap-3 flex-wrap">
+            {(() => {
+              const connected = devices.filter((d) => d.connected !== false)
+              return (
+                <>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span className="text-gray-700">
+                      {connected.length} Device{connected.length === 1 ? "" : "s"} Connected
+                    </span>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {connected.map((device, idx) => {
+                      const isActive = selectedDevice === device.deviceId
+                      const label = device.model || device.deviceId || `Device ${idx + 1}`
+                      const base = "px-4 py-2 rounded border text-sm"
+                      const cls = isActive
+                        ? `${base} border-blue-500 text-blue-700 bg-blue-50`
+                        : `${base} border-gray-300 text-gray-700 bg-white hover:bg-gray-100`
+                      return (
+                        <button
+                          key={device.deviceId || idx}
+                          className={cls}
+                          onClick={() => onSelectDevice(device.deviceId)}
+                          title={device.deviceId}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )
+            })()}
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap ml-auto">
+          <div className="flex items-center gap-2 flex-nowrap overflow-auto ml-auto">
             <input
               type="text"
               value={search}
@@ -292,30 +336,17 @@ export default function SignalingPage({
               className="min-w-[200px] bg-white border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
-              className={`px-4 py-2 rounded text-white text-sm ${autoScroll ? "bg-black" : "bg-gray-600"}`}
-              onClick={() => setAutoScroll(!autoScroll)}
-            >
-              Auto Scroll
-            </button>
-            <button
               className={`px-4 py-2 rounded border text-sm ${
                 selectedDevice && deviceConnected
-                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                  ? capturing
+                    ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
+                    : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                   : "bg-gray-100 border-gray-200 text-gray-400"
               }`}
               disabled={!selectedDevice || !deviceConnected}
-              onClick={handleStartCapture}
+              onClick={handleToggleCapture}
             >
-              Start Capture
-            </button>
-            <button
-              className={`px-4 py-2 rounded border text-sm ${
-                capturing ? "bg-red-100 text-red-700 border-red-200 hover:bg-red-200" : "bg-gray-100 border-gray-200 text-gray-400"
-              }`}
-              disabled={!capturing}
-              onClick={handleStopCapture}
-            >
-              Stop Capture
+              {capturing ? "Stop Capture" : "Start Capture"}
             </button>
             <button
               className="px-4 py-2 rounded border text-sm bg-white border-gray-300 hover:border-gray-400"
@@ -336,12 +367,12 @@ export default function SignalingPage({
         </div>
 
         {!selectedDevice ? (
-          <EmptyState title="Select a device to start" subtitle="1) Brancher en diag 2) Cliquer Start Capture" />
+          <EmptyState title="Select a device to start" subtitle="1) Plug in diag mode 2) Click Start Capture" />
         ) : (
           <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col border-r border-gray-200">
               <div className={`flex flex-wrap items-center gap-3 px-4 py-2 text-xs text-gray-700 border-b ${toolbarBg}`}>
-                <span>Filtres :</span>
+                <span>Filters:</span>
                 <select
                   className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
                   value={directionFilter}
@@ -393,7 +424,7 @@ export default function SignalingPage({
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="No messages yet" subtitle="Brancher en diag puis Start Capture" />
+                    <EmptyState title="No messages yet" subtitle="Plug in diag mode then Start Capture" />
                   )
                 ) : (
                   <div className="overflow-auto">

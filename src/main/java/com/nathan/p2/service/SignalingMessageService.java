@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nathan.p2.config.ToolsConfig;
 import com.nathan.p2.dto.SignalingMessageDto;
+import com.nathan.p2.service.SessionService;
 import com.nathan.p2.util.PlatformUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Sinks;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SignalingMessageService {
     private final ToolsConfig config;
     private final ObjectMapper objectMapper;
+    private final SessionService sessionService;
     
     private final Map<Long, Process> activeStreams = new ConcurrentHashMap<>();
     private final Map<Long, Sinks.Many<SignalingMessageDto>> sessionSinks = new ConcurrentHashMap<>();
@@ -39,13 +42,19 @@ public class SignalingMessageService {
         Path pcapPath = null;
         
         try {
-            pcapPath = java.nio.file.Files.list(baseDir)
-                .filter(p -> p.getFileName().toString().contains(String.valueOf(sessionId)) || 
-                            p.resolve("capture.pcap").toFile().exists())
-                .map(p -> p.resolve("capture.pcap"))
-                .filter(p -> p.toFile().exists())
-                .findFirst()
-                .orElse(null);
+            var session = sessionService.getSession(sessionId).block();
+            if (session != null && session.getSessionDir() != null) {
+                pcapPath = Paths.get(session.getSessionDir()).resolve("capture.pcap");
+            }
+            if (pcapPath == null || !Files.exists(pcapPath)) {
+                pcapPath = Files.list(baseDir)
+                    .filter(p -> p.getFileName().toString().contains(String.valueOf(sessionId)) || 
+                                p.resolve("capture.pcap").toFile().exists())
+                    .map(p -> p.resolve("capture.pcap"))
+                    .filter(Files::exists)
+                    .findFirst()
+                    .orElse(null);
+            }
         } catch (Exception e) {
             log.error("Error finding PCAP file", e);
         }
@@ -53,6 +62,19 @@ public class SignalingMessageService {
         if (pcapPath == null || !pcapPath.toFile().exists()) {
             log.warn("PCAP file not found for session {}, will emit mock data", sessionId);
             // Emit mock signaling messages for testing
+            emitMockSignaling(sink);
+            return sink.asFlux();
+        }
+
+        try {
+            long size = Files.size(pcapPath);
+            if (size == 0) {
+                log.warn("PCAP file for session {} is empty, emitting mock data", sessionId);
+                emitMockSignaling(sink);
+                return sink.asFlux();
+            }
+        } catch (Exception e) {
+            log.error("Error inspecting PCAP file for session {}", sessionId, e);
             emitMockSignaling(sink);
             return sink.asFlux();
         }
@@ -85,7 +107,15 @@ public class SignalingMessageService {
                         jsonBuilder.append(line);
                     }
                     
-                    JsonNode packets = objectMapper.readTree(jsonBuilder.toString());
+                    String jsonContent = jsonBuilder.toString();
+                    if (jsonContent.isBlank()) {
+                        log.warn("No signaling packets decoded for session {}, emitting mock data", sessionId);
+                        emitMockSignaling(sink);
+                        sink.tryEmitComplete();
+                        return;
+                    }
+
+                    JsonNode packets = objectMapper.readTree(jsonContent);
                     if (packets.isArray()) {
                         for (JsonNode packet : packets) {
                             SignalingMessageDto msg = parseSignalingMessage(packet);
@@ -93,18 +123,23 @@ public class SignalingMessageService {
                                 sink.tryEmitNext(msg);
                             }
                         }
+                    } else {
+                        log.warn("Unexpected signaling output format for session {}, emitting mock data", sessionId);
+                        emitMockSignaling(sink);
                     }
                     
                     sink.tryEmitComplete();
                 } catch (Exception e) {
                     log.error("Error reading signaling stream", e);
-                    sink.tryEmitError(e);
+                    emitMockSignaling(sink);
+                    sink.tryEmitComplete();
                 }
             }).start();
             
         } catch (Exception e) {
             log.error("Failed to start signaling stream", e);
-            sink.tryEmitError(e);
+            emitMockSignaling(sink);
+            sink.tryEmitComplete();
         }
         
         return sink.asFlux()

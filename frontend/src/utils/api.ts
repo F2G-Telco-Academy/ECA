@@ -120,7 +120,9 @@ export const api = {
     })
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: 'Failed to start session' }))
-      throw new Error(error.message || 'Failed to start session')
+      const err = new Error(error.message || 'Failed to start session')
+      ;(err as any).status = res.status
+      throw err
     }
     return res.json()
   },
@@ -129,7 +131,11 @@ export const api = {
     const res = await fetch(`${API_BASE}/sessions/${sessionId}/stop`, {
       method: 'POST'
     })
-    if (!res.ok) throw new Error('Failed to stop session')
+    if (!res.ok) {
+      const err = new Error('Failed to stop session')
+      ;(err as any).status = res.status
+      throw err
+    }
   },
 
   // KPI Data

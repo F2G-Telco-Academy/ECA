@@ -229,22 +229,14 @@ public class SessionController {
         )
     })
     @GetMapping(value = "/{id}/signaling", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> streamSignaling(
+    public Flux<SignalingMessageDto> streamSignaling(
         @Parameter(description = "Session ID", required = true, example = "1")
         @PathVariable Long id
     ) {
         return signalingService.streamSignaling(id)
-                .map(msg -> {
-                    try {
-                        return "data: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(msg) + "\n\n";
-                    } catch (Exception e) {
-                        log.error("Error serializing signaling message", e);
-                        return "data: {\"error\":\"Serialization failed\"}\n\n";
-                    }
-                })
                 .onErrorResume(error -> {
                     log.error("Error streaming signaling for session {}", id, error);
-                    return Flux.just("data: {\"error\":\"" + error.getMessage() + "\"}\n\n");
+                    return Flux.error(error);
                 });
     }
 }
