@@ -616,9 +616,9 @@ export default function LegacyHome() {
             )}
             {activePanelTab === '5gnr-mib' && (
               <div className="h-full p-4 overflow-auto">
-                {sessionId ? (
+                {currentContext?.sessionId ? (
                   <iframe 
-                    src={`/5gnr?session=${sessionId}`} 
+                    src={`/5gnr?session=${currentContext.sessionId}`} 
                     className="w-full h-full border-0"
                   />
                 ) : (
@@ -628,9 +628,9 @@ export default function LegacyHome() {
             )}
             {activePanelTab === '5gnr-sib' && (
               <div className="h-full p-4 overflow-auto">
-                {sessionId ? (
+                {currentContext?.sessionId ? (
                   <iframe 
-                    src={`/5gnr?session=${sessionId}&tab=sib`} 
+                    src={`/5gnr?session=${currentContext.sessionId}&tab=sib`} 
                     className="w-full h-full border-0"
                   />
                 ) : (
@@ -640,9 +640,9 @@ export default function LegacyHome() {
             )}
             {activePanelTab === '5gnr-capability' && (
               <div className="h-full p-4 overflow-auto">
-                {sessionId ? (
+                {currentContext?.sessionId ? (
                   <iframe 
-                    src={`/5gnr?session=${sessionId}&tab=capability`} 
+                    src={`/5gnr?session=${currentContext.sessionId}&tab=capability`} 
                     className="w-full h-full border-0"
                   />
                 ) : (
@@ -652,9 +652,9 @@ export default function LegacyHome() {
             )}
             {activePanelTab === 'user-graph' && (
               <div className="h-full p-4 overflow-auto">
-                {sessionId ? (
+                {currentContext?.sessionId ? (
                   <iframe 
-                    src={`/visualize?session=${sessionId}`} 
+                    src={`/visualize?session=${currentContext.sessionId}`} 
                     className="w-full h-full border-0"
                   />
                 ) : (

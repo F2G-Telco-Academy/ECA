@@ -19,11 +19,12 @@ export default function TabulatedKPIView({ sessionId, kpiType }: TabulatedKPIVie
         const kpiData = await api.getKpiAggregates(sessionId)
         setData(kpiData)
         // Detect network type from data
-        if (kpiData.rat) {
-          if (kpiData.rat.includes('NR') || kpiData.rat.includes('5G')) setNetworkType('5G')
-          else if (kpiData.rat.includes('LTE') || kpiData.rat.includes('4G')) setNetworkType('LTE')
-          else if (kpiData.rat.includes('WCDMA') || kpiData.rat.includes('UMTS')) setNetworkType('WCDMA')
-          else if (kpiData.rat.includes('GSM')) setNetworkType('GSM')
+        if (kpiData && kpiData.length > 0 && kpiData[0].rat) {
+          const rat = kpiData[0].rat
+          if (rat.includes('NR') || rat.includes('5G')) setNetworkType('5G')
+          else if (rat.includes('LTE') || rat.includes('4G')) setNetworkType('LTE')
+          else if (rat.includes('WCDMA') || rat.includes('UMTS')) setNetworkType('WCDMA')
+          else if (rat.includes('GSM')) setNetworkType('GSM')
         }
         setTimestamp(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 }))
       } catch (err) {
@@ -196,7 +197,7 @@ export default function TabulatedKPIView({ sessionId, kpiType }: TabulatedKPIVie
       </div>
       <table className="w-full text-xs">
         <tbody>
-          {networkType === '5G' ? [
+          {(networkType === '5G' ? [
             { param: 'systemFrameNumber', value: '254', color: 'cyan' },
             { param: 'subCarrierSpacingCommon', value: 'scs15', color: 'yellow' },
             { param: 'ssb-SubcarrierOffset', value: '2', color: 'cyan' },
@@ -215,7 +216,7 @@ export default function TabulatedKPIView({ sessionId, kpiType }: TabulatedKPIVie
             { param: 'LAC', value: '1234', color: 'yellow' },
             { param: 'Cell-Identity', value: '12345', color: 'cyan' },
             { param: 'NCC-Permitted', value: '255', color: 'yellow' }
-          ].map((row, idx) => (
+          ]).map((row, idx) => (
             <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-800' : 'bg-gray-850'}>
               <td className="p-3 border-b border-gray-700 font-semibold w-1/2">{row.param}</td>
               <td className={`p-3 border-b border-gray-700 text-${row.color}-400`}>{row.value}</td>

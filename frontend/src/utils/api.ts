@@ -412,9 +412,9 @@ export const api = {
     const res = await fetch(`${API_BASE}/offline/download?path=${encodeURIComponent(pcapPath)}`)
     if (!res.ok) throw new Error('Failed to download file')
     return res.blob()
-  }
-}
+  },
 
+  // Upload PCAP for offline analysis
   async uploadPcapForAnalysis(file: File): Promise<{ success: boolean; sessionId: string; kpisAvailable: string[]; message?: string }> {
     const formData = new FormData()
     formData.append('file', file)
@@ -424,4 +424,5 @@ export const api = {
       body: formData
     })
     return res.json()
-  },
+  }
+}

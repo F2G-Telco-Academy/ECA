@@ -90,7 +90,7 @@ export default function AppShell() {
 
     const ViewComponent = viewMap[selectedView]
     if (ViewComponent) {
-      const Component = dynamic(ViewComponent, { ssr: false })
+      const Component: any = dynamic(ViewComponent, { ssr: false })
       return <Component sessionId={sessionId} />
     }
 

@@ -25,7 +25,7 @@ export default function SignalingViewer({ sessionId }: { sessionId: string | nul
 
     const fetchMessages = async () => {
       try {
-        const data = await api.getRecords(sessionId, { page: 0, size: 200 })
+        const data = await api.getRecords(sessionId, 0, 200)
         const formattedMessages: SignalingMessage[] = (data.content || []).map((record: any, idx: number) => ({
           id: record.id || idx.toString(),
           timestamp: record.timestamp || `09:${String(idx).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}.${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
@@ -62,7 +62,7 @@ export default function SignalingViewer({ sessionId }: { sessionId: string | nul
   }
 
   const generateHexDump = () => {
-    const lines = []
+    const lines: string[] = []
     for (let i = 0; i < 20; i++) {
       const hex = Array.from({ length: 16 }, () => 
         Math.floor(Math.random() * 256).toString(16).padStart(2, '0')

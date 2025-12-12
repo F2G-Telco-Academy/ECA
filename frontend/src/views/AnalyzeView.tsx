@@ -16,7 +16,7 @@ export default function AnalyzeView({ sessionId }: AnalyzeViewProps) {
     const fetchSessions = async () => {
       try {
         const data = await api.getSessions()
-        setSessions(data || [])
+        setSessions(data.content || [])
       } catch (err) {
         console.error('Failed to fetch sessions:', err)
       }

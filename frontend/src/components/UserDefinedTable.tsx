@@ -158,7 +158,7 @@ export default function UserDefinedTable({ sessionId }: { sessionId: string | nu
 
     const fetchTableData = async () => {
       try {
-        const data = await api.getRecords(sessionId, { page: 0, size: 50 })
+        const data = await api.getRecords(sessionId, 0, 50)
         setTableData(data.content || [])
         setTimestamp(new Date().toLocaleTimeString())
       } catch (err) {

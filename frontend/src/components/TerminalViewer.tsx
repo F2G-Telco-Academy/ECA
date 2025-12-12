@@ -25,7 +25,7 @@ export default function TerminalViewer({ sessionId }: { sessionId: string | null
 
     const fetchLogs = async () => {
       try {
-        const data = await api.getRecords(sessionId, { page: 0, size: 100 })
+        const data = await api.getRecords(sessionId, 0, 100)
         const newLogs: LogEntry[] = (data.content || []).map((record: any) => ({
           timestamp: record.timestamp || new Date().toLocaleTimeString(),
           direction: record.direction || (Math.random() > 0.5 ? 'UL DCCH' : 'DL DCCH'),

@@ -27,7 +27,7 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
     setConverting(true); setError(null); setResult(null)
     setQueue(prev => [{ name: file.name, size: file.size, type: inputFormat.toUpperCase(), status: 'Converting', progress: 15 }, ...prev])
     try {
-      const res = await api.convertOfflineLog(file, { inputFormat, outputFormat })
+      const res = await api.convertOfflineLog(file)
       setResult(res)
 
       // Capture PCAP path whenever backend returns one
