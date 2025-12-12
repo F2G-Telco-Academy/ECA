@@ -376,11 +376,11 @@ export default function SignalingPage({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filtrer par message, proto ou device..."
+              placeholder="Filter by message, proto, or device..."
               className="min-w-[220px] bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span className="px-2 py-1 rounded-full bg-gray-100">Messages : {filteredMessages.length}</span>
+              <span className="px-2 py-1 rounded-full bg-gray-100">Messages: {filteredMessages.length}</span>
               {capturing && <span className="px-2 py-1 rounded-full bg-green-100 text-green-700">Live</span>}
             </div>
           </div>
@@ -574,3 +574,4 @@ export default function SignalingPage({
     </div>
   )
 }
+
