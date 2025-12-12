@@ -146,14 +146,6 @@ export default function AnalyzerInterface() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* Top Menu Bar */}
-      <div className="bg-white border-b border-gray-300 px-4 py-1 flex items-center gap-4 text-sm">
-        {['File', 'Setting', 'Statistics/Status', 'User Defined', 'Call Statistics', 'Mobile Reset', 'Window'].map(menu => (
-          <span key={menu} className="font-semibold cursor-pointer hover:text-blue-600">{menu}</span>
-        ))}
-        <span onClick={() => setShowAbout(true)} className="font-semibold cursor-pointer hover:text-blue-600">Help</span>
-      </div>
-
       <AboutDialog isOpen={showAbout} onClose={() => setShowAbout(false)} />
 
       {/* Toolbar */}

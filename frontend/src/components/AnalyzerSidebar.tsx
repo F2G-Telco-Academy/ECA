@@ -11,6 +11,7 @@ interface SidebarProps {
 export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSelect }: SidebarProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
+  const [activeView, setActiveView] = useState<string>('')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     mobile: true,
     scanner: false,
@@ -58,6 +59,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
   }
 
   const handleItemClick = (item: string) => {
+    setActiveView(item)
     onViewSelect(item)
     onKpiSelect(item)
   }
@@ -137,7 +139,13 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
           {expanded.message && (
             <div>
               {['Signaling Message', 'Terminal Logs', 'LBS Message', 'LCS Message', 'PPP Frame/Mobile Packet Message', 'AirPcap Message', 'HTTP / SIP Message', 'H.324m Message Viewer'].map(item => (
-                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                <div 
+                  key={item} 
+                  onClick={() => handleItemClick(item)} 
+                  className={`px-6 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}
+                >
+                  {item}
+                </div>
               ))}
             </div>
           )}
@@ -159,7 +167,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
               {expanded['5gnr'] && (
                 <div>
                   {['5GNR Information (MIB)', '5GNR SA Information (SIB1)', '5GNR SipCell Information (Reconfig)', '5GNR TDD UL-DL Configuration', '5GNR NSA RRC State', '5GNR NSA Status Information', '5GNR RRC State', '5GNR SA Status Information', '5GNR UE Capability', '5GNR Feature Sets', '5GNR SCG Mobility Statistics', '5GNR EPS Fallback Statistics', '5GNR Handover Statistics (intra NR-HO)', '5GNR Handover Event Information', '5GNR SCell State'].map(item => (
-                    <div key={item} onClick={() => handleItemClick(item)} className="px-9 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                    <div key={item} onClick={() => handleItemClick(item)} className={`px-9 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
                   ))}
                 </div>
               )}
@@ -171,7 +179,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
               {expanded.lte && (
                 <div>
                   {['LTE RRC State', 'LTE NAS'].map(item => (
-                    <div key={item} onClick={() => handleItemClick(item)} className="px-9 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                    <div key={item} onClick={() => handleItemClick(item)} className={`px-9 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
                   ))}
                 </div>
               )}
@@ -193,7 +201,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
           {expanded.rfkpi && (
             <div>
               {['RF Measurement Summary Info', 'NRDC RF Measurement Summary Info', '5GNR Beamforming Information', 'Benchmarking RF Summary', 'Dynamic Spectrum Sharing'].map(item => (
-                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                <div key={item} onClick={() => handleItemClick(item)} className={`px-6 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
               ))}
             </div>
           )}
@@ -208,7 +216,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
           {expanded.userdefined && (
             <div>
               {['User Defined Table', 'User Defined Graph'].map(item => (
-                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                <div key={item} onClick={() => handleItemClick(item)} className={`px-6 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
               ))}
             </div>
           )}
@@ -229,12 +237,12 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
               {expanded.qualcommMsg && (
                 <div>
                   {['Qualcomm DM Message', 'Qualcomm Mobile Message', 'Qualcomm Event Report Message', 'Qualcomm QChat Message Viewer', 'Qualcomm L2 RLC Messages'].map(item => (
-                    <div key={item} onClick={() => handleItemClick(item)} className="px-9 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                    <div key={item} onClick={() => handleItemClick(item)} className={`px-9 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
                   ))}
                 </div>
               )}
               {['Common-Q', '5GNR-Q', 'LTE/Adv-Q Graph', 'LTE/Adv-Q', 'WCDMA-Graph', 'WCDMA-Statistics', 'WCDMA-Status', 'WCDMA-Layer 3', 'CDMA-Graph', 'CDMA-Statistics', 'CDMA-Status'].map(item => (
-                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                <div key={item} onClick={() => handleItemClick(item)} className={`px-6 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
               ))}
             </div>
           )}
@@ -249,7 +257,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
           {expanded.smartapp && (
             <div>
               {['Smart App Message List', 'Smart App Status', 'Smart App Bluetooth/LE Status', 'Smart Standalone Mode Setting', 'WiFi Scan List', 'WCDMA RF Info', 'WiFi Info'].map(item => (
-                <div key={item} onClick={() => handleItemClick(item)} className="px-6 py-1 hover:bg-gray-700 cursor-pointer">{item}</div>
+                <div key={item} onClick={() => handleItemClick(item)} className={`px-6 py-1 cursor-pointer ${activeView === item ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'}`}>{item}</div>
               ))}
             </div>
           )}

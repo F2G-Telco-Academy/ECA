@@ -143,7 +143,7 @@ export default function TerminalViewer({ sessionId }: { sessionId: string | null
                   <td className="p-2 border-r border-gray-900">{log.timestamp}</td>
                   <td className="p-2 border-r border-gray-900">{log.direction}</td>
                   <td className="p-2 border-r border-gray-900">{log.channel}</td>
-                  <td className="p-2">{log.message}</td>
+                  <td className="p-2">{typeof log.message === 'object' ? JSON.stringify(log.message) : log.message}</td>
                 </tr>
               ))}
             </tbody>
