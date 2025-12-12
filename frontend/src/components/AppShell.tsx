@@ -74,11 +74,11 @@ export default function AppShell() {
   }, [tab, devices, selectedDevice, category])
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-800">
+    <div className="h-screen flex flex-col bg-white text-gray-800">
       <TopBar currentPage={tab} onPageChange={onTabChange} />
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar fixed */}
-        <Sidebar selectedDevice={selectedDevice} onDeviceSelect={setSelectedDevice} onSelectCategory={setCategory} />
+        <Sidebar devices={devices} selectedDevice={selectedDevice} onDeviceSelect={setSelectedDevice} onSelectCategory={setCategory} />
         {/* Main content area swaps only the embedded view */}
         <div className="flex-1 overflow-hidden">{content}</div>
       </div>

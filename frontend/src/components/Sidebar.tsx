@@ -30,13 +30,13 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
   const slots = [0, 1, 2, 3] // four placeholders
 
   return (
-    <div className={`w-64 flex flex-col h-full border-r ${panelBg}`}>
+    <div className={`w-64 flex flex-col flex-shrink-0 self-stretch border-r ${panelBg}`}>
       <div className="px-4 py-3 border-b border-gray-800">
         <div className="text-sm font-semibold">Extended Cellular</div>
         <div className="text-[11px] text-gray-400">Analyzer</div>
       </div>
 
-      <div className="flex-1 overflow-auto px-3 py-2 space-y-4">
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
         {/* Device Manager */}
         <div>
           <div className="w-full flex items-center px-3 py-2 text-sm rounded">
@@ -44,18 +44,18 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
               <span className="w-4 text-center">📱</span> Device Manager
             </span>
           </div>
-          <div className="mt-2 space-y-2">
+          <div className="mt-1 space-y-1">
             {slots.map((slotIdx) => {
-              const device = devices[slotIdx]
+              const device = devices?.[slotIdx]
               const isConnected = !!device
-              const active = isConnected && selectedDevice === device.deviceId
+              const active = isConnected && selectedDevice === device?.deviceId
               return (
                 <button
                   key={slotIdx}
                   onClick={() => {
-                    if (device) onDeviceSelect(device.deviceId)
+                    if (device?.deviceId) onDeviceSelect(device.deviceId)
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-3 text-sm rounded border ${
+                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded border ${
                     active
                       ? 'bg-slate-800 text-white border-slate-700'
                       : isConnected
@@ -72,12 +72,12 @@ export default function Sidebar({ devices, selectedDevice, onDeviceSelect, onSel
                     <div className="flex flex-col text-left leading-tight">
                       <span>Mobile {slotIdx + 1}</span>
                       <span className="text-[11px] text-gray-300">
-                        {isConnected ? device.model || device.deviceId : 'Not connected'}
+                        {isConnected ? device?.model || device?.deviceId : 'Not connected'}
                       </span>
                     </div>
                   </div>
                   <span className="text-[11px] text-gray-400 capitalize">
-                    {isConnected ? device.status?.toLowerCase?.() || 'connected' : ''}
+                    {isConnected ? device?.status?.toLowerCase?.() || 'connected' : ''}
                   </span>
                 </button>
               )

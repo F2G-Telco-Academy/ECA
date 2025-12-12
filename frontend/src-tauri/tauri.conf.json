@@ -44,16 +44,15 @@
         "template": "wix/main.wxs",
         "fragmentPaths": [],
         "componentRefs": [],
+        "componentGroupRefs": [],
         "featureRefs": [],
+        "featureGroupRefs": [],
         "mergeRefs": [],
-        "skipWebviewInstall": false,
-        "license": "../../LICENSE",
         "enableElevatedUpdateTask": true,
         "bannerPath": "wix/banner.bmp",
         "dialogImagePath": "wix/dialog.bmp"
       },
       "nsis": {
-        "license": "../../LICENSE",
         "headerImage": "nsis/header.bmp",
         "sidebarImage": "nsis/sidebar.bmp",
         "installerIcon": "icons/icon.ico",

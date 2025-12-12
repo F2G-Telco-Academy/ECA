@@ -63,9 +63,9 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
   }
 
   return (
-    <div className="w-64 bg-gray-100 border-r border-gray-300 flex flex-col h-full overflow-hidden text-xs">
+    <div className="w-64 bg-gray-100 border-r border-gray-300 flex flex-col h-full text-xs" style={{ minHeight: 0 }}>
       {/* Mobile */}
-      <div className="border-b border-gray-300">
+      <div className="border-b border-gray-300 flex-shrink-0">
         <div onClick={() => toggle('mobile')} className="px-3 py-2 bg-gray-200 cursor-pointer hover:bg-gray-300 flex items-center justify-between">
           <span className="font-semibold">Mobile</span>
           <span>{expanded.mobile ? '▼' : '▶'}</span>
@@ -86,7 +86,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
       </div>
 
       {/* Scanner */}
-      <div className="border-b border-gray-300">
+      <div className="border-b border-gray-300 flex-shrink-0">
         <div onClick={() => toggle('scanner')} className="px-3 py-2 bg-gray-200 cursor-pointer hover:bg-gray-300 flex items-center justify-between">
           <span className="font-semibold">Scanner</span>
           <span>{expanded.scanner ? '▼' : '▶'}</span>
@@ -106,7 +106,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
       </div>
 
       {/* GPS */}
-      <div className="border-b border-gray-300">
+      <div className="border-b border-gray-300 flex-shrink-0">
         <div onClick={() => toggle('gps')} className="px-3 py-2 bg-gray-200 cursor-pointer hover:bg-gray-300 flex items-center justify-between">
           <span className="font-semibold">GPS</span>
           <span>{expanded.gps ? '▼' : '▶'}</span>
@@ -114,13 +114,15 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
       </div>
 
       {/* Supported KPIs */}
-      <div className="flex-1 overflow-auto">
-        <div className="px-3 py-2 bg-gray-200 border-b border-gray-300">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
+        <div className="px-3 py-2 bg-gray-200 border-b border-gray-300 flex-shrink-0">
           <span className="font-semibold">Supported KPIs</span>
         </div>
-        <div className="p-2">
+        <div className="p-2 flex-shrink-0">
           <input type="text" placeholder="Search Keyword" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
         </div>
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden"  style={{ minHeight: 0 }}>
 
         {/* Message */}
         <div className="border-b border-gray-300">
@@ -255,6 +257,7 @@ export default function AnalyzerSidebar({ onDeviceSelect, onKpiSelect, onViewSel
             <span>{expanded.autocallkpi ? '▼' : '▶'}</span>
             <span className="font-semibold">Autocall KPI</span>
           </div>
+        </div>
         </div>
       </div>
     </div>

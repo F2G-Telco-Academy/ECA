@@ -277,6 +277,28 @@ fn main() {
         .manage(BackendState {
             process: Mutex::new(None),
         })
+        .setup(|app| {
+            let app_handle = app.handle().clone();
+            
+            // Start backend in a separate thread
+            tauri::async_runtime::spawn(async move {
+                // Check if backend is already running
+                match check_backend_status().await {
+                    Ok(true) => {
+                        println!("Backend already running on port 8080");
+                    }
+                    _ => {
+                        println!("Starting Spring Boot backend...");
+                        // Try to start backend
+                        if let Err(e) = start_backend_process().await {
+                            eprintln!("Failed to start backend: {}", e);
+                        }
+                    }
+                }
+            });
+            
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // File system
             get_app_data_dir,
@@ -298,4 +320,41 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+async fn start_backend_process() -> Result<(), String> {
+    // Find backend directory - check multiple possible locations
+    let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
+    
+    let backend_paths = vec![
+        current_dir.parent().and_then(|p| p.parent()).map(|p| p.to_path_buf()),
+        current_dir.parent().map(|p| p.to_path_buf()),
+    ];
+
+    for base_path_opt in backend_paths {
+        if let Some(base_path) = base_path_opt {
+            let mvnw_path = if cfg!(target_os = "windows") {
+                base_path.join("mvnw.cmd")
+            } else {
+                base_path.join("mvnw")
+            };
+
+            if mvnw_path.exists() {
+                println!("Found backend at: {:?}", base_path);
+                
+                let _child = Command::new(&mvnw_path)
+                    .arg("spring-boot:run")
+                    .current_dir(&base_path)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()
+                    .map_err(|e| format!("Failed to start backend: {}", e))?;
+
+                println!("Backend process started successfully");
+                return Ok(());
+            }
+        }
+    }
+
+    Err("Backend mvnw not found in expected locations".to_string())
 }

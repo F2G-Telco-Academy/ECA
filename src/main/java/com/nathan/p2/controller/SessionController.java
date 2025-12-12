@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @RestController
 @RequestMapping("/api/sessions")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Tag(name = "Session Management", description = "APIs for managing capture sessions. Sessions represent individual data capture operations from connected devices, including start/stop control, status monitoring, and log streaming.")
 public class SessionController {

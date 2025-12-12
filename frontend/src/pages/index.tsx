@@ -188,7 +188,7 @@ export default function LegacyHome() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto text-xs">
+          <div className="flex-1 overflow-y-auto text-xs" style={{maxHeight: 'calc(100vh - 250px)'}}>
             {/* Mobile Section */}
             <div className="border-b border-slate-700">
               <button

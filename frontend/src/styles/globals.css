@@ -10,6 +10,10 @@
   padding: 0;
 }
 
+html, body, #__next {
+  height: 100%;
+}
+
 body {
   /* Switch to light theme to match screenshots */
   @apply bg-white text-gray-800;
