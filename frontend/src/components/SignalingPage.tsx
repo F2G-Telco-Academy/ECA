@@ -463,7 +463,7 @@ export default function SignalingPage({
                       <div className="text-xs text-gray-500">Capture en cours... en attente de messages.</div>
                     </div>
                   ) : (
-                    <EmptyState title="Aucun message" subtitle="Lance une capture en mode diag pour voir les messages ici." />
+                    <EmptyState title="No messages yet" subtitle="Start capture in diag mode to see messages here." />
                   )
                 ) : (
                   <div className="p-4">
@@ -574,4 +574,5 @@ export default function SignalingPage({
     </div>
   )
 }
+
 
