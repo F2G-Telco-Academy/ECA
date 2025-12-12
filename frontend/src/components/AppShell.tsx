@@ -21,7 +21,7 @@ export default function AppShell() {
   const [packetCount, setPacketCount] = useState(0)
   const [devices, setDevices] = useState<Device[]>([])
   const [category, setCategory] = useState<string|null>(null)
-  const [selectedView, setSelectedView] = useState<string|null>(null)
+  const [selectedView, setSelectedView] = useState<string>('Signaling Message')
 
   // Load devices periodically
   useEffect(() => {
@@ -57,7 +57,49 @@ export default function AppShell() {
 
   const handleViewSelect = (view: string) => {
     setSelectedView(view)
-    // Don't auto-switch tabs - let user stay on current tab
+  }
+
+  // Get sessionId for views
+  const sessionId = selectedDevices[0] || null
+
+  // Render view based on sidebar selection
+  const renderView = () => {
+    if (!sessionId) {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📱</div>
+            <div className="text-lg mb-2">No Device Selected</div>
+            <div className="text-sm">Please select a device from the sidebar</div>
+          </div>
+        </div>
+      )
+    }
+
+    // Map view names to components
+    const viewMap: Record<string, any> = {
+      'Signaling Message': () => import('@/components/SignalingViewer'),
+      'Terminal Logs': () => import('@/components/TerminalViewer'),
+      'RF Measurement Summary Info': () => import('@/components/RFSummary'),
+      'Qualcomm DM Message': () => import('@/components/QualcommViewer'),
+      'User Defined Table': () => import('@/components/UserDefinedTable'),
+      'User Defined Graph': () => import('@/components/GraphView'),
+      'Map View': () => import('@/components/MapView'),
+    }
+
+    const ViewComponent = viewMap[selectedView]
+    if (ViewComponent) {
+      const Component = dynamic(ViewComponent, { ssr: false })
+      return <Component sessionId={sessionId} />
+    }
+
+    return <SignalingPage
+      devices={devices}
+      selectedDevice={selectedDevice}
+      onSelectDevice={setSelectedDevice}
+      onPacketCount={setPacketCount}
+      categoryFilter={category}
+    />
   }
 
   const content = useMemo(() => {
@@ -67,20 +109,12 @@ export default function AppShell() {
       case 'visualize':
         return <VisualizeView />
       case 'analyze':
-        return <AnalyzerInterface />
+        return <AnalyzeView sessionId={sessionId} />
       case 'signaling':
       default:
-        return (
-          <SignalingPage
-            devices={devices}
-            selectedDevice={selectedDevice}
-            onSelectDevice={setSelectedDevice}
-            onPacketCount={setPacketCount}
-            categoryFilter={category}
-          />
-        )
+        return renderView()
     }
-  }, [tab, devices, selectedDevice, category])
+  }, [tab, selectedView, devices, selectedDevice, category, sessionId])
 
   return (
     <div className="h-screen flex flex-col bg-white text-gray-800">
