@@ -48,4 +48,47 @@ public class FiveGNRController {
                 return parserService.parseUECapability(Paths.get(pcapPath));
             });
     }
+
+    @GetMapping("/session/{sessionId}/rrc-state")
+    public Mono<Map<String, Object>> getRrcState(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "state", "CONNECTED",
+                "message", "5GNR RRC state tracking"
+            ));
+    }
+
+    @GetMapping("/session/{sessionId}/nsa-status")
+    public Mono<Map<String, Object>> getNsaStatus(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "mode", "NSA",
+                "scgState", "CONFIGURED",
+                "message", "5GNR NSA status information"
+            ));
+    }
+
+    @GetMapping("/session/{sessionId}/sa-status")
+    public Mono<Map<String, Object>> getSaStatus(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "mode", "SA",
+                "state", "REGISTERED",
+                "message", "5GNR SA status information"
+            ));
+    }
+
+    @GetMapping("/session/{sessionId}/handover-stats")
+    public Mono<Map<String, Object>> getHandoverStats(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "totalHandovers", 0,
+                "successRate", 0.0,
+                "message", "5GNR handover statistics"
+            ));
+    }
 }

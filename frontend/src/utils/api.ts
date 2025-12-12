@@ -424,5 +424,91 @@ export const api = {
       body: formData
     })
     return res.json()
+  },
+
+  // ========== LTE ==========
+  
+  async getLteRrcState(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/lte/session/${sessionId}/rrc-state`)
+    if (!res.ok) throw new Error('Failed to get LTE RRC state')
+    return res.json()
+  },
+
+  async getLteNas(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/lte/session/${sessionId}/nas`)
+    if (!res.ok) throw new Error('Failed to get LTE NAS')
+    return res.json()
+  },
+
+  // ========== 5GNR ==========
+  
+  async get5gnrRrcState(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/rrc-state`)
+    if (!res.ok) throw new Error('Failed to get 5GNR RRC state')
+    return res.json()
+  },
+
+  async get5gnrNsaStatus(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/nsa-status`)
+    if (!res.ok) throw new Error('Failed to get 5GNR NSA status')
+    return res.json()
+  },
+
+  async get5gnrSaStatus(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/sa-status`)
+    if (!res.ok) throw new Error('Failed to get 5GNR SA status')
+    return res.json()
+  },
+
+  async get5gnrHandoverStats(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/handover-stats`)
+    if (!res.ok) throw new Error('Failed to get 5GNR handover stats')
+    return res.json()
+  },
+
+  // ========== RF ==========
+  
+  async getRfNrdcSummary(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/rf/session/${sessionId}/nrdc-summary`)
+    if (!res.ok) throw new Error('Failed to get NRDC summary')
+    return res.json()
+  },
+
+  async getRfBeamforming(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/rf/session/${sessionId}/beamforming`)
+    if (!res.ok) throw new Error('Failed to get beamforming info')
+    return res.json()
+  },
+
+  async getRfDss(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/rf/session/${sessionId}/dss`)
+    if (!res.ok) throw new Error('Failed to get DSS info')
+    return res.json()
+  },
+
+  // ========== QUALCOMM ==========
+  
+  async getQualcomm5gnr(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/qualcomm/session/${sessionId}/5gnr`)
+    if (!res.ok) throw new Error('Failed to get Qualcomm 5GNR')
+    return res.json()
+  },
+
+  async getQualcommLte(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/qualcomm/session/${sessionId}/lte`)
+    if (!res.ok) throw new Error('Failed to get Qualcomm LTE')
+    return res.json()
+  },
+
+  async getQualcommEventReports(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/qualcomm/session/${sessionId}/event-reports`)
+    if (!res.ok) throw new Error('Failed to get event reports')
+    return res.json()
+  },
+
+  async getQualcommL2Rlc(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/qualcomm/session/${sessionId}/l2-rlc`)
+    if (!res.ok) throw new Error('Failed to get L2 RLC')
+    return res.json()
   }
 }

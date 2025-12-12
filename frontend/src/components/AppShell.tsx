@@ -86,6 +86,12 @@ export default function AppShell() {
       'User Defined Table': () => import('@/components/UserDefinedTable'),
       'User Defined Graph': () => import('@/components/GraphView'),
       'Map View': () => import('@/components/MapView'),
+      'LTE RRC State': () => import('@/components/LteRrcState'),
+      'LTE NAS': () => import('@/components/LteNas'),
+      '5GNR RRC State': () => import('@/components/FiveGNRStatus'),
+      '5GNR NSA Status Information': () => import('@/components/FiveGNRStatus'),
+      '5GNR SA Status Information': () => import('@/components/FiveGNRStatus'),
+      '5GNR Handover Statistics (intra NR-HO)': () => import('@/components/FiveGNRStatus'),
     }
 
     const ViewComponent = viewMap[selectedView]

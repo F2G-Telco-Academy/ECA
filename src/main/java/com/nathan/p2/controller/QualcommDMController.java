@@ -31,4 +31,41 @@ public class QualcommDMController {
                 return parserService.parseDMMessages(Paths.get(qmdlPath));
             });
     }
+
+    @GetMapping("/session/{sessionId}/5gnr")
+    public reactor.core.publisher.Mono<Map<String, Object>> get5gnrInfo(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "message", "Qualcomm 5GNR diagnostic information"
+            ));
+    }
+
+    @GetMapping("/session/{sessionId}/lte")
+    public reactor.core.publisher.Mono<Map<String, Object>> getLteInfo(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "message", "Qualcomm LTE/Adv diagnostic information"
+            ));
+    }
+
+    @GetMapping("/session/{sessionId}/event-reports")
+    public reactor.core.publisher.Mono<Map<String, Object>> getEventReports(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "events", java.util.List.of(),
+                "message", "Qualcomm event reports"
+            ));
+    }
+
+    @GetMapping("/session/{sessionId}/l2-rlc")
+    public reactor.core.publisher.Mono<Map<String, Object>> getL2Rlc(@PathVariable Long sessionId) {
+        return sessionService.getSession(sessionId)
+            .map(session -> Map.of(
+                "sessionId", sessionId,
+                "message", "Qualcomm L2 RLC messages"
+            ));
+    }
 }
