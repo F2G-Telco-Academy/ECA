@@ -7,6 +7,7 @@ import StatusBar from '@/components/StatusBar'
 import SignalingPage from '@/components/SignalingPage'
 import ConvertView from '@/views/ConvertView'
 import VisualizeView from '@/views/VisualizeView'
+import AnalyzeView from '@/views/AnalyzeView'
 import type { Device } from '@/types'
 
 // Dynamically import the XCAL-structured analyzer
