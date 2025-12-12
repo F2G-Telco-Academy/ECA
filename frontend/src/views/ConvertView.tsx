@@ -13,6 +13,7 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
   const [outputFormat, setOutputFormat] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
   const [lastPcapPath, setLastPcapPath] = useState<string | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   // Background/card styles derived from theme
   const bgMain = theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
@@ -69,8 +70,13 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
       if (platformApi) {
         try {
           await platformApi.openFileLocation(lastPcapPath)
+          setSaveMessage(`Opened folder: ${filename}`)
+          setTimeout(() => setSaveMessage(null), 3500)
         } catch {}
       }
+      // If no platform open was attempted, still show a saved/downloaded confirmation
+      setSaveMessage(`Saved: ${filename}`)
+      setTimeout(() => setSaveMessage(null), 3500)
     } catch (e: any) {
       alert('Failed to open converted file location: ' + (e?.message || 'Unknown error'))
     }
@@ -104,6 +110,17 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
     )
   }
 
+  const handleRemove = () => {
+    if (file) {
+      setFile(null)
+      setInputFormat('')
+      setOutputFormat('')
+      return
+    }
+
+    setQueue((q) => q.slice(1))
+  }
+
   return (
     <div className={`flex flex-col h-full pb-16 md:pb-0 ${bgMain}`}>
       <div className="px-6 py-4 border-b border-gray-200">
@@ -113,12 +130,33 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
 
       {/* Toolbar */}
       <div className="px-6 py-2 border-b border-gray-200 bg-gray-50 text-sm flex items-center gap-2">
-        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400">📂 Open</button>
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          onClick={() => {
+            // In browser: trigger file input (like Add)
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) fileInput.click();
+            // In Tauri: you could use dialog.open with a default path if needed
+          }}
+        >
+          📂 Open
+        </button>
         <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400" onClick={()=>document.getElementById('fileInput')?.click()}>➕ Add</button>
-        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400" onClick={()=>setQueue(q=>q.slice(1))}>➖ Remove</button>
+        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400" onClick={() => handleRemove()}>➖ Remove</button>
         <span className="mx-2 w-px h-5 bg-gray-200"/>
-        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400" onClick={handleConvert} disabled={!file || converting}>{converting?'⏳ Converting':'▶️ Start'}</button>
-        <button className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400">⏹ Stop</button>
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          onClick={handleConvert}
+          disabled={!file || !inputFormat || !outputFormat || converting}
+        >
+          {converting ? '⏳ Converting' : '▶️ Start'}
+        </button>
+        <button
+          className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
+          disabled={!file || !inputFormat || !outputFormat}
+        >
+          ⏹ Stop
+        </button>
         <span className="mx-2 w-px h-5 bg-gray-200"/>
         <button
           className="px-2 py-1 rounded border border-gray-300 bg-white hover:border-gray-400 disabled:opacity-50"
@@ -127,7 +165,11 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
         >
           💾 Save
         </button>
-        <div className="ml-auto text-xs text-gray-500">Supports .qmdl2, .sdm, .lpd</div>
+          {saveMessage && (
+            <div className="ml-3 px-3 py-1 rounded text-xs text-green-700 bg-green-50 border border-green-100">
+              {saveMessage}
+            </div>
+          )}
       </div>
 
       {/* Body */}
@@ -167,18 +209,21 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
         </div>
 
         {/* Upload area with drag & drop */}
-        <div className="border border-dashed border-gray-300 rounded bg-gray-50 p-6 flex flex-col items-center justify-center text-center"
-             onDragOver={(e:any) => { e.preventDefault(); setIsDragging(true) }}
-             onDragLeave={(e:any) => { e.preventDefault(); setIsDragging(false) }}
-             onDrop={(e:any) => {
-               e.preventDefault();
-               setIsDragging(false)
-               const files = Array.from(e.dataTransfer.files || []) as File[]
-               const valid = files.find(f => f.name.toLowerCase().endsWith('.qmdl') || f.name.toLowerCase().endsWith('.qmdl2') || f.name.toLowerCase().endsWith('.sdm'))
-               if (valid) {
-                 setFile(valid)
-               }
-             }}
+        <div
+          className={`border border-dashed border-gray-300 rounded ${isDragging ? 'bg-white' : 'bg-gray-50'} p-6 flex flex-col items-center justify-center text-center cursor-pointer`}
+          onClick={() => document.getElementById('fileInput')?.click()}
+          onDragEnter={(e: any) => { e.preventDefault(); setIsDragging(true) }}
+          onDragOver={(e: any) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragging(true) }}
+          onDragLeave={(e: any) => { e.preventDefault(); setIsDragging(false) }}
+          onDrop={(e: any) => {
+            e.preventDefault();
+            setIsDragging(false)
+            const files = Array.from(e.dataTransfer.files || []) as File[]
+            const valid = files.find(f => f.name.toLowerCase().endsWith('.qmdl') || f.name.toLowerCase().endsWith('.qmdl2') || f.name.toLowerCase().endsWith('.sdm'))
+            if (valid) {
+              setFile(valid)
+            }
+          }}
         >
           <div className={`w-10 h-10 mb-3 rounded-full border flex items-center justify-center ${isDragging ? 'border-blue-500 text-blue-500' : 'border-gray-300 text-gray-400'}`}>
             ↓
@@ -199,8 +244,18 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
           {file && (
-            <div className="mt-3 text-xs text-gray-600">
-              Selected: <span className="font-mono">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(2)} MB)
+            <div className="mt-3 text-xs text-gray-600 flex items-center justify-center gap-2">
+              <span>
+                Selected: <span className="font-mono">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(2)} MB)
+              </span>
+              <button
+                type="button"
+                className="ml-2 px-2 py-0.5 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-300"
+                aria-label="Remove selected file"
+                onClick={() => { setFile(null); setInputFormat(''); setOutputFormat(''); }}
+              >
+                ×
+              </button>
             </div>
           )}
         </div>
@@ -244,3 +299,4 @@ export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'da
     </div>
   )
 }
+
