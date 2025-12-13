@@ -53,10 +53,12 @@ public class OfflineLogController {
                 .then(Mono.defer(() -> {
                     log.info("📁 File uploaded: {} ({} bytes)", filename, inputPath.toFile().length());
                     
-                    // Auto-detect and convert QMDL files
+                    // Auto-detect and convert QMDL files using SCAT (same as SDM)
                     if (qmdlConversionService.isQmdlFile(inputPath)) {
-                        log.info("🔄 QMDL file detected, converting to PCAP...");
-                        return qmdlConversionService.convertQmdlToPcap(inputPath)
+                        log.info("🔄 QMDL file detected, converting to PCAP with SCAT...");
+                        Path outputPath = uploadDir.resolve(
+                            filename.replaceAll("\\.(qmdl|qmdl2|dlf)$", ".pcap"));
+                        return conversionService.convertToPcap(inputPath, outputPath, OfflineLogConversionService.LogFormat.QMDL)
                             .flatMap(pcapPath -> processAndExtractKpis(pcapPath, filename));
                     } 
                     // Handle other formats
