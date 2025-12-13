@@ -56,14 +56,28 @@ public class OfflineLogConversionService {
 
         return toolService.start(spec)
             .flatMap(handle -> toolService.awaitExit(handle)
-                .doOnSuccess(code -> {
+                .flatMap(code -> {
                     if (code == 0) {
-                        log.info("Successfully converted {} to {}", inputLog, outputPcap);
+                        log.info("SCAT process completed with code 0");
+                        // Verify PCAP was created
+                        if (java.nio.file.Files.exists(outputPcap)) {
+                            try {
+                                long size = java.nio.file.Files.size(outputPcap);
+                                log.info("Successfully converted {} to {} ({} bytes)", inputLog, outputPcap, size);
+                                return Mono.just(outputPcap);
+                            } catch (Exception e) {
+                                log.error("Error checking PCAP file: {}", e.getMessage());
+                                return Mono.error(new RuntimeException("PCAP file created but cannot read: " + e.getMessage()));
+                            }
+                        } else {
+                            log.error("SCAT completed but PCAP not found at: {}", outputPcap);
+                            return Mono.error(new RuntimeException("Conversion completed but PCAP file not created"));
+                        }
                     } else {
-                        log.error("Conversion failed with code: {}", code);
+                        log.error("Conversion failed with exit code: {}", code);
+                        return Mono.error(new RuntimeException("SCAT conversion failed with exit code: " + code));
                     }
-                })
-                .thenReturn(outputPcap));
+                }));
     }
 
     public LogFormat detectFormat(Path logFile) {

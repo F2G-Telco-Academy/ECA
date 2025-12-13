@@ -179,21 +179,27 @@ public class OfflineLogController {
 
     @GetMapping("/download")
     public Mono<ResponseEntity<Resource>> downloadConvertedFile(@RequestParam("path") String pcapPath) {
-        return Mono.fromCallable(() -> {
-            Path path = Paths.get(pcapPath);
+        return Mono.<ResponseEntity<Resource>>fromCallable(() -> {
+            log.info("Download request for: {}", pcapPath);
+            Path path = Paths.get(pcapPath).toAbsolutePath();
+            log.info("Resolved absolute path: {}", path);
+            
             if (!Files.exists(path)) {
+                log.error("File not found: {}", path);
                 return ResponseEntity.notFound().build();
             }
 
             byte[] data = Files.readAllBytes(path);
             ByteArrayResource resource = new ByteArrayResource(data);
+            
+            log.info("Downloaded file: {} ({} bytes)", path.getFileName(), data.length);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName().toString())
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + path.getFileName().toString() + "\"")
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .contentLength(data.length)
-                    .body(resource);
-        });
+                    .body((Resource) resource);
+        }).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }
     
     /**
