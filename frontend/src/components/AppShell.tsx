@@ -114,7 +114,18 @@ export default function AppShell() {
   }
 
   const content = useMemo(() => {
-    // Sidebar controls content on ALL tabs
+    // Convert tab shows dual-mode interface
+    if (tab === 'convert') {
+      return <ConvertView theme="dark" onSessionCreated={setSelectedDevices} />
+    }
+    
+    // Analyze tab shows report generation
+    if (tab === 'analyze') return <AnalyzeView />
+    
+    // Visualize tab
+    if (tab === 'visualize') return <VisualizeView />
+    
+    // Signaling tab: sidebar controls content
     return renderSidebarDrivenContent()
   }, [tab, selectedView, devices, selectedDevice, category, sessionId])
 

@@ -270,6 +270,19 @@ export const api = {
     return res.json()
   },
 
+  // PCAP Analysis (Post-Processing)
+  async uploadPcapForAnalysis(file: File): Promise<{ success: boolean; sessionId: string; kpisAvailable: string[]; message: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const res = await fetch(`${API_BASE}/offline/analyze`, {
+      method: 'POST',
+      body: formData
+    })
+    if (!res.ok) throw new Error('Failed to analyze PCAP')
+    return res.json()
+  },
+
   // Real-time Streaming (SSE)
   createKpiStream(sessionId: string | number): EventSource {
     return new EventSource(`${API_BASE}/sessions/${sessionId}/logs`)

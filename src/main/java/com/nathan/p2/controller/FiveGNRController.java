@@ -1,5 +1,6 @@
 package com.nathan.p2.controller;
 
+import com.nathan.p2.repository.SessionRepository;
 import com.nathan.p2.service.FiveGNRParserService;
 import com.nathan.p2.service.SessionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +24,7 @@ public class FiveGNRController {
 
     private final FiveGNRParserService parserService;
     private final SessionService sessionService;
+    private final SessionRepository sessionRepository;
 
     @GetMapping("/session/{sessionId}/mib")
     public Mono<Map<String, Object>> getMIB(@PathVariable Long sessionId) {
@@ -218,5 +220,35 @@ public class FiveGNRController {
                 process.waitFor();
                 return result;
             }));
+    }
+
+    @GetMapping("/session/{sessionId}/scg-mobility")
+    public Mono<Map<String, Object>> getScgMobility(@PathVariable Long sessionId) {
+        return sessionRepository.findById(sessionId)
+            .map(session -> Map.of("sessionId", sessionId, "stats", Map.of()));
+    }
+
+    @GetMapping("/session/{sessionId}/eps-fallback")
+    public Mono<Map<String, Object>> getEpsFallback(@PathVariable Long sessionId) {
+        return sessionRepository.findById(sessionId)
+            .map(session -> Map.of("sessionId", sessionId, "fallbacks", List.of()));
+    }
+
+    @GetMapping("/session/{sessionId}/handover-events")
+    public Mono<Map<String, Object>> getHandoverEvents(@PathVariable Long sessionId) {
+        return sessionRepository.findById(sessionId)
+            .map(session -> Map.of("sessionId", sessionId, "events", List.of()));
+    }
+
+    @GetMapping("/session/{sessionId}/scell-state")
+    public Mono<Map<String, Object>> getScellState(@PathVariable Long sessionId) {
+        return sessionRepository.findById(sessionId)
+            .map(session -> Map.of("sessionId", sessionId, "state", "INACTIVE"));
+    }
+
+    @GetMapping("/session/{sessionId}/nsa-rrc-state")
+    public Mono<Map<String, Object>> getNsaRrcState(@PathVariable Long sessionId) {
+        return sessionRepository.findById(sessionId)
+            .map(session -> Map.of("sessionId", sessionId, "state", "IDLE"));
     }
 }

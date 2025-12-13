@@ -1,9 +1,234 @@
 "use client"
 import { useState } from 'react'
 import { api } from '@/utils/api'
-import { platformApi } from '@/utils/tauri-api'
 
-export default function ConvertView({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
+interface ConvertViewProps {
+  theme?: 'light' | 'dark'
+  onSessionCreated?: (sessionIds: string[]) => void
+}
+
+export default function ConvertView({ theme = 'light', onSessionCreated }: ConvertViewProps) {
+  const [mode, setMode] = useState<'convert' | 'analyze'>('convert')
+  
+  // Convert mode state
+  const [file, setFile] = useState<File | null>(null)
+  const [converting, setConverting] = useState(false)
+  const [convertResult, setConvertResult] = useState<any>(null)
+  
+  // Analyze mode state
+  const [pcapFiles, setPcapFiles] = useState<File[]>([])
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analyzeResult, setAnalyzeResult] = useState<any>(null)
+  
+  const [error, setError] = useState<string|null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const bgMain = theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+  const cardBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+
+  const handleConvert = async () => {
+    if (!file) { alert('Please select a file'); return }
+    setConverting(true)
+    setError(null)
+    try {
+      const res = await api.convertOfflineLog(file)
+      setConvertResult(res)
+      if (res?.success) {
+        alert(`Conversion successful! PCAP: ${res.pcapPath}`)
+      } else {
+        setError(res?.message || 'Conversion failed')
+      }
+    } catch (err: any) {
+      setError(err.message)
+      alert('Conversion failed: ' + err.message)
+    } finally {
+      setConverting(false)
+    }
+  }
+
+  const handleAnalyzePcap = async (pcapPath?: string) => {
+    const filesToAnalyze = pcapPath ? [new File([], pcapPath)] : pcapFiles
+    if (filesToAnalyze.length === 0) { alert('Please select PCAP file(s)'); return }
+    
+    setAnalyzing(true)
+    setError(null)
+    try {
+      // Analyze first file (can extend to multiple later)
+      const res = await api.uploadPcapForAnalysis(filesToAnalyze[0])
+      setAnalyzeResult(res)
+      if (res?.success && res?.sessionId) {
+        onSessionCreated?.([res.sessionId])
+        alert(`Analysis complete! ${res.kpisAvailable?.length || 0} KPIs extracted. Use sidebar to view.`)
+      } else {
+        setError(res?.message || 'Analysis failed')
+      }
+    } catch (err: any) {
+      setError(err.message)
+      alert('Analysis failed: ' + err.message)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  return (
+    <div className={`flex flex-col h-full ${bgMain}`}>
+      {/* Header with mode toggle */}
+      <div className="px-6 py-4 border-b border-gray-700">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-lg font-semibold">Convert & Analyze</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setMode('convert')}
+              className={`px-4 py-1.5 rounded text-sm ${mode === 'convert' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+            >
+              Convert Logs
+            </button>
+            <button
+              onClick={() => setMode('analyze')}
+              className={`px-4 py-1.5 rounded text-sm ${mode === 'analyze' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+            >
+              Analyze PCAP
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-gray-400">
+          {mode === 'convert' ? 'Convert baseband logs to PCAP format' : 'Upload PCAP files for KPI analysis'}
+        </p>
+      </div>
+
+      <div className="p-6 flex-1 overflow-auto">
+        {mode === 'convert' ? (
+          /* CONVERT MODE */
+          <div className="space-y-4">
+            {/* Upload area */}
+            <div
+              className={`border-2 border-dashed ${isDragging ? 'border-blue-500 bg-gray-800' : 'border-gray-600'} rounded-lg p-8 flex flex-col items-center cursor-pointer`}
+              onClick={() => document.getElementById('fileInput')?.click()}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+                const f = e.dataTransfer.files?.[0]
+                if (f) setFile(f)
+              }}
+            >
+              <div className="text-4xl mb-3">📁</div>
+              <div className="text-sm font-medium mb-1">Drop baseband log here or click to upload</div>
+              <div className="text-xs text-gray-400 mb-4">Auto-detects: .qmdl, .qmdl2, .sdm</div>
+              <input id="fileInput" type="file" accept=".qmdl,.qmdl2,.sdm" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              {file && (
+                <div className="mt-3 text-sm flex items-center gap-2">
+                  <span className="font-mono text-blue-400">{file.name}</span>
+                  <span className="text-gray-500">({(file.size/1024/1024).toFixed(2)} MB)</span>
+                  <button onClick={(e) => { e.stopPropagation(); setFile(null) }} className="text-red-400 hover:text-red-300">✕</button>
+                </div>
+              )}
+            </div>
+
+            {/* Convert button */}
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleConvert}
+                disabled={!file || converting}
+                className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500"
+              >
+                {converting ? '⏳ Converting...' : '🔄 Convert to PCAP'}
+              </button>
+            </div>
+
+            {/* Convert result */}
+            {convertResult?.success && (
+              <div className={`p-4 ${cardBg} border rounded-lg`}>
+                <div className="text-green-400 font-medium mb-2">✅ Conversion Complete</div>
+                <div className="text-sm text-gray-300 mb-3">
+                  PCAP: <span className="font-mono text-blue-400">{convertResult.pcapPath}</span>
+                </div>
+                <button
+                  onClick={() => handleAnalyzePcap(convertResult.pcapPath)}
+                  className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-sm"
+                >
+                  📊 Analyze this PCAP
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ANALYZE MODE */
+          <div className="space-y-4">
+            {/* PCAP upload area */}
+            <div
+              className={`border-2 border-dashed ${isDragging ? 'border-blue-500 bg-gray-800' : 'border-gray-600'} rounded-lg p-8 flex flex-col items-center cursor-pointer`}
+              onClick={() => document.getElementById('pcapInput')?.click()}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+                const files = Array.from(e.dataTransfer.files || []) as File[]
+                setPcapFiles(files.filter(f => f.name.endsWith('.pcap') || f.name.endsWith('.pcapng')))
+              }}
+            >
+              <div className="text-4xl mb-3">📊</div>
+              <div className="text-sm font-medium mb-1">Drop PCAP file(s) here or click to upload</div>
+              <div className="text-xs text-gray-400 mb-4">Supports .pcap, .pcapng</div>
+              <input
+                id="pcapInput"
+                type="file"
+                accept=".pcap,.pcapng"
+                multiple
+                className="hidden"
+                onChange={(e) => setPcapFiles(Array.from(e.target.files || []))}
+              />
+              {pcapFiles.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {pcapFiles.map((f, i) => (
+                    <div key={i} className="text-sm flex items-center gap-2">
+                      <span className="font-mono text-blue-400">{f.name}</span>
+                      <span className="text-gray-500">({(f.size/1024/1024).toFixed(2)} MB)</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Analyze button */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => handleAnalyzePcap()}
+                disabled={pcapFiles.length === 0 || analyzing}
+                className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500"
+              >
+                {analyzing ? '⏳ Analyzing...' : '🔍 Analyze PCAP'}
+              </button>
+            </div>
+
+            {/* Analyze result */}
+            {analyzeResult?.success && (
+              <div className={`p-4 ${cardBg} border rounded-lg`}>
+                <div className="text-green-400 font-medium mb-2">✅ Analysis Complete</div>
+                <div className="text-sm text-gray-300 space-y-1 mb-3">
+                  <div>Session: <span className="font-mono text-blue-400">{analyzeResult.sessionId}</span></div>
+                  <div>KPIs: <span className="font-mono text-blue-400">{analyzeResult.kpisAvailable?.length || 0}</span></div>
+                </div>
+                <div className="text-sm text-gray-400">👈 Use sidebar to view extracted KPIs</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Error display */}
+        {error && (
+          <div className="mt-4 p-3 bg-red-900/20 border border-red-700 rounded text-sm text-red-300">
+            ❌ {error}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
   const [file, setFile] = useState<File | null>(null)
   const [converting, setConverting] = useState(false)
   const [result, setResult] = useState<any>(null)
