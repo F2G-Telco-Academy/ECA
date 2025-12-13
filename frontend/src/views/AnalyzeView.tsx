@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 import { api } from '@/utils/api'
 
 interface AnalyzeViewProps {
-  sessionId: string | null
+  sessionId?: string | null
 }
 
-export default function AnalyzeView({ sessionId }: AnalyzeViewProps) {
+export default function AnalyzeView({ sessionId = null }: AnalyzeViewProps) {
   const [sessions, setSessions] = useState<any[]>([])
   const [selectedSession, setSelectedSession] = useState<string | null>(sessionId)
   const [generating, setGenerating] = useState(false)

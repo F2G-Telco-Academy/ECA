@@ -50,7 +50,7 @@ public class OfflineLogConversionService {
             .command(pythonPath)
             .args(args)
             .workingDirectory(Path.of(config.getTools().getScat().getPath()))
-            .environment(Map.of("PYTHONPATH", "src"))
+            .environment(Map.of("PYTHONPATH", ".."))
             .captureStderr(true)
             .build();
 

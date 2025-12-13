@@ -165,7 +165,7 @@ public class QmdlConversionService {
             "-L", "ip,mac,rlc,pdcp,rrc,nas"
         );
         pb.directory(new File("./scat/src/scat"));
-        pb.environment().put("PYTHONPATH", ".");
+        pb.environment().put("PYTHONPATH", "..");
         executeConversion(pb, "scat");
     }
     

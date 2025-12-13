@@ -427,18 +427,6 @@ export const api = {
     return res.blob()
   },
 
-  // Upload PCAP for offline analysis
-  async uploadPcapForAnalysis(file: File): Promise<{ success: boolean; sessionId: string; kpisAvailable: string[]; message?: string }> {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    const res = await fetch(`${API_BASE}/offline/analyze`, {
-      method: 'POST',
-      body: formData
-    })
-    return res.json()
-  },
-
   // ========== LTE ==========
   
   async getLteRrcState(sessionId: string | number): Promise<any> {
