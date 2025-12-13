@@ -1,6 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { api } from '@/utils/api'
+import { platformApi } from '@/utils/tauri-api'
 
 interface ConvertViewProps {
   theme?: 'light' | 'dark'
@@ -145,12 +146,36 @@ export default function ConvertView({ theme = 'light', onSessionCreated }: Conve
                 <div className="text-sm text-gray-300 mb-3">
                   PCAP: <span className="font-mono text-blue-400">{convertResult.pcapPath}</span>
                 </div>
-                <button
-                  onClick={() => handleAnalyzePcap(convertResult.pcapPath)}
-                  className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-sm"
-                >
-                  📊 Analyze this PCAP
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const blob = await api.downloadConvertedFile(convertResult.pcapPath)
+                        const url = URL.createObjectURL(blob)
+                        const link = document.createElement('a')
+                        const filename = convertResult.pcapPath.split(/[\\/]/).pop() || 'converted.pcap'
+                        link.href = url
+                        link.download = filename
+                        document.body.appendChild(link)
+                        link.click()
+                        link.remove()
+                        URL.revokeObjectURL(url)
+                        alert(`Downloaded: ${filename}`)
+                      } catch (e: any) {
+                        alert('Download failed: ' + e.message)
+                      }
+                    }}
+                    className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-sm"
+                  >
+                    💾 Download PCAP
+                  </button>
+                  <button
+                    onClick={() => handleAnalyzePcap(convertResult.pcapPath)}
+                    className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-sm"
+                  >
+                    📊 Analyze this PCAP
+                  </button>
+                </div>
               </div>
             )}
           </div>

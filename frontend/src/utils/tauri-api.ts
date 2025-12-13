@@ -61,6 +61,15 @@ export const tauriApi = {
     return invoke('open_file_location', { path })
   },
 
+  async saveFileDialog(defaultPath?: string): Promise<string | null> {
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog')
+      return await save({ defaultPath })
+    } catch {
+      return null
+    }
+  },
+
   // ========== SYSTEM UTILITIES ==========
   
   async getSystemInfo(): Promise<{

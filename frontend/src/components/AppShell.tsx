@@ -19,6 +19,7 @@ export default function AppShell() {
   const [tab, setTab] = useState<TabId>('signaling')
   const [selectedDevice, setSelectedDevice] = useState<string|null>(null)
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
+  const [offlineSessionId, setOfflineSessionId] = useState<string | null>(null)
   const [packetCount, setPacketCount] = useState(0)
   const [devices, setDevices] = useState<Device[]>([])
   const [category, setCategory] = useState<string|null>(null)
@@ -60,8 +61,8 @@ export default function AppShell() {
     setSelectedView(view)
   }
 
-  // Get sessionId for views
-  const sessionId = selectedDevices[0] || null
+  // Get sessionId for views (prefer offline session if available)
+  const sessionId = offlineSessionId || selectedDevices[0] || null
 
   // Render content based on sidebar selection (works across ALL tabs)
   const renderSidebarDrivenContent = () => {
@@ -116,7 +117,13 @@ export default function AppShell() {
   const content = useMemo(() => {
     // Convert tab shows dual-mode interface
     if (tab === 'convert') {
-      return <ConvertView theme="dark" onSessionCreated={setSelectedDevices} />
+      return <ConvertView 
+        theme="dark" 
+        onSessionCreated={(ids) => {
+          // Store offline session ID
+          if (ids.length > 0) setOfflineSessionId(ids[0])
+        }} 
+      />
     }
     
     // Analyze tab shows report generation
@@ -137,13 +144,31 @@ export default function AppShell() {
         <AnalyzerSidebar
           onDeviceSelect={(ids) => {
             setSelectedDevices(ids)
-            if (ids.length > 0) setSelectedDevice(ids[0])
+            if (ids.length > 0) {
+              setSelectedDevice(ids[0])
+              setOfflineSessionId(null) // Clear offline session when device selected
+            }
           }}
           onKpiSelect={setCategory}
           onViewSelect={handleViewSelect}
         />
         {/* Main content area - driven by sidebar selection */}
-        <div className="flex-1 overflow-hidden">{content}</div>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Offline session indicator */}
+          {offlineSessionId && (
+            <div className="px-4 py-2 bg-blue-900/30 border-b border-blue-700 text-blue-300 text-sm flex items-center gap-2">
+              <span>📊</span>
+              <span>Offline Session Active: {offlineSessionId}</span>
+              <button 
+                onClick={() => setOfflineSessionId(null)}
+                className="ml-auto px-2 py-1 rounded bg-blue-800 hover:bg-blue-700 text-xs"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+          <div className="flex-1 overflow-hidden">{content}</div>
+        </div>
       </div>
       <StatusBar />
     </div>
