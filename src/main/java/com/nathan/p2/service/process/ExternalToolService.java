@@ -117,7 +117,17 @@ public class ExternalToolService {
                 .filter(proc -> proc.toHandle().equals(handle))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Process not found"));
-            return p.waitFor();
+            
+            // Wait up to 5 minutes for process to complete
+            boolean finished = p.waitFor(300, TimeUnit.SECONDS);
+            
+            if (!finished) {
+                log.error("Process timeout after 5 minutes, killing process");
+                p.destroyForcibly();
+                throw new RuntimeException("Process timeout after 5 minutes");
+            }
+            
+            return p.exitValue();
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

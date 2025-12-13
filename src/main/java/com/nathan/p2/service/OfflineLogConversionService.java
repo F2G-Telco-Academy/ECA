@@ -32,6 +32,8 @@ public class OfflineLogConversionService {
     }
 
     public Mono<Path> convertToPcap(Path inputLog, Path outputPcap, LogFormat format) {
+        log.info("Starting conversion: {} -> {} (format: {})", inputLog.getFileName(), outputPcap.getFileName(), format);
+        
         List<String> args = new ArrayList<>();
         args.add("main.py");
         args.add("-t");
@@ -44,6 +46,7 @@ public class OfflineLogConversionService {
         args.add("ip,mac,rlc,pdcp,rrc,nas");  // GSMTAP layers
         
         String pythonPath = PlatformUtils.resolvePythonPath(config.getTools().getScat().getPythonPath());
+        log.info("Using Python: {}, Working dir: {}", pythonPath, config.getTools().getScat().getPath());
         
         ProcessSpec spec = ProcessSpec.builder()
             .id("scat-convert-" + System.currentTimeMillis())
@@ -55,6 +58,7 @@ public class OfflineLogConversionService {
             .build();
 
         return toolService.start(spec)
+            .doOnSuccess(handle -> log.info("SCAT process started: {}", handle.pid()))
             .flatMap(handle -> toolService.awaitExit(handle)
                 .flatMap(code -> {
                     if (code == 0) {
