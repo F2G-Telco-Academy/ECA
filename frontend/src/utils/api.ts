@@ -262,12 +262,30 @@ export const api = {
     const formData = new FormData()
     formData.append('file', file)
     
-    const res = await fetch(`${API_BASE}/offline/convert`, {
-      method: 'POST',
-      body: formData
-    })
-    if (!res.ok) throw new Error('Failed to convert log')
-    return res.json()
+    // Create AbortController with 5 minute timeout for large files
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutes
+    
+    try {
+      const res = await fetch(`${API_BASE}/offline/convert`, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Conversion failed: ${errorText}`)
+      }
+      return res.json()
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        throw new Error('Conversion timeout (5 minutes). File may be too large.')
+      }
+      throw error
+    }
   },
 
   // PCAP Analysis (Post-Processing)
