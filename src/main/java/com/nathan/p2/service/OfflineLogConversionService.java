@@ -37,9 +37,9 @@ public class OfflineLogConversionService {
         args.add("-t");
         args.add(format.getScatType());
         args.add("-d");
-        args.add(inputLog.toString());
+        args.add(inputLog.toAbsolutePath().toString());
         args.add("-F");
-        args.add(outputPcap.toString());
+        args.add(outputPcap.toAbsolutePath().toString());
         args.add("-L");
         args.add("ip,mac,rlc,pdcp,rrc,nas");  // GSMTAP layers
         

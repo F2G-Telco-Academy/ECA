@@ -160,8 +160,8 @@ public class QmdlConversionService {
             "python3",
             "main.py",
             "-t", "qc",
-            "-d", input.toString(),
-            "-F", output.toString(),
+            "-d", input.toAbsolutePath().toString(),
+            "-F", output.toAbsolutePath().toString(),
             "-L", "ip,mac,rlc,pdcp,rrc,nas"
         );
         pb.directory(new File("./scat/src/scat"));
