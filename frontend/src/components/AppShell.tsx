@@ -92,6 +92,10 @@ export default function AppShell() {
       '5GNR NSA Status Information': () => import('@/components/FiveGNRStatus'),
       '5GNR SA Status Information': () => import('@/components/FiveGNRStatus'),
       '5GNR Handover Statistics (intra NR-HO)': () => import('@/components/FiveGNRStatus'),
+      'HTTP / SIP Message': () => import('@/components/HttpSipMessages'),
+      '5GNR TDD UL-DL Configuration': () => import('@/components/FiveGNRStatus'),
+      '5GNR SipCell Information (Reconfig)': () => import('@/components/FiveGNRStatus'),
+      '5GNR Feature Sets': () => import('@/components/FiveGNRStatus'),
     }
 
     const ViewComponent = viewMap[selectedView]

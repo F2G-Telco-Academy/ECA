@@ -510,5 +510,47 @@ export const api = {
     const res = await fetch(`${API_BASE}/qualcomm/session/${sessionId}/l2-rlc`)
     if (!res.ok) throw new Error('Failed to get L2 RLC')
     return res.json()
+  },
+
+  // ========== HTTP/SIP ==========
+  
+  async getHttpSipMessages(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/http-sip/session/${sessionId}/messages`)
+    if (!res.ok) throw new Error('Failed to get HTTP/SIP messages')
+    return res.json()
+  },
+
+  // ========== 5GNR ADVANCED ==========
+  
+  async get5gnrTddConfig(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/tdd-config`)
+    if (!res.ok) throw new Error('Failed to get TDD config')
+    return res.json()
+  },
+
+  async get5gnrSipCellInfo(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/sipcell-info`)
+    if (!res.ok) throw new Error('Failed to get SipCell info')
+    return res.json()
+  },
+
+  async get5gnrFeatureSets(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/5gnr/session/${sessionId}/feature-sets`)
+    if (!res.ok) throw new Error('Failed to get feature sets')
+    return res.json()
+  },
+
+  // ========== LEGACY PROTOCOLS ==========
+  
+  async getWcdmaStatus(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/legacy/session/${sessionId}/wcdma-status`)
+    if (!res.ok) throw new Error('Failed to get WCDMA status')
+    return res.json()
+  },
+
+  async getGsmStatus(sessionId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/legacy/session/${sessionId}/gsm-status`)
+    if (!res.ok) throw new Error('Failed to get GSM status')
+    return res.json()
   }
 }
