@@ -33,7 +33,7 @@ public class OfflineLogConversionService {
 
     public Mono<Path> convertToPcap(Path inputLog, Path outputPcap, LogFormat format) {
         List<String> args = new ArrayList<>();
-        args.add("src/scat/main.py");
+        args.add("main.py");
         args.add("-t");
         args.add(format.getScatType());
         args.add("-d");
