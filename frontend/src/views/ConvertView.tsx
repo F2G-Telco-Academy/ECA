@@ -48,17 +48,17 @@ export default function ConvertView({ theme = 'light', onSessionCreated }: Conve
     if (!file) { alert('Please select a file'); return }
     setConverting(true)
     setError(null)
+    setConvertResult(null)
+    
     try {
       const res = await api.convertOfflineLog(file)
       setConvertResult(res)
-      if (res?.success) {
-        alert(`✅ Conversion successful!\nPCAP: ${res.pcapPath}`)
-      } else {
+      
+      if (!res?.success) {
         setError(res?.message || 'Conversion failed')
       }
     } catch (err: any) {
       setError(err.message)
-      alert('❌ Conversion failed: ' + err.message)
     } finally {
       setConverting(false)
     }
@@ -204,9 +204,27 @@ export default function ConvertView({ theme = 'light', onSessionCreated }: Conve
                 disabled={!file || converting}
                 className="px-8 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 font-medium transition-colors"
               >
-                {converting ? '⏳ Converting to PCAP...' : '🔄 Convert to PCAP'}
+                {converting ? '⏳ Converting...' : '🔄 Convert to PCAP'}
               </button>
             </div>
+
+            {/* Progress indicator */}
+            {converting && (
+              <div className={`p-4 ${cardBg} border rounded-lg`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                  <span className="text-sm font-medium">Converting {file?.name}...</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div className="bg-blue-500 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">
+                  Estimated time: {file ? Math.ceil(file.size / 1024 / 1024 * 3) : 15} seconds
+                  <br/>
+                  Processing with SCAT + extracting KPIs...
+                </div>
+              </div>
+            )}
 
             {/* Convert result */}
             {convertResult?.success && (
