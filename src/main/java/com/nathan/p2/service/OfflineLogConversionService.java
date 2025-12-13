@@ -59,12 +59,17 @@ public class OfflineLogConversionService {
                 .flatMap(code -> {
                     if (code == 0) {
                         log.info("SCAT process completed with code 0");
-                        // Verify PCAP was created
+                        // Verify PCAP was created and has minimum size
                         if (java.nio.file.Files.exists(outputPcap)) {
                             try {
                                 long size = java.nio.file.Files.size(outputPcap);
-                                log.info("Successfully converted {} to {} ({} bytes)", inputLog, outputPcap, size);
-                                return Mono.just(outputPcap);
+                                if (size > 100) {
+                                    log.info("Successfully converted {} to {} ({} bytes)", inputLog, outputPcap, size);
+                                    return Mono.just(outputPcap);
+                                } else {
+                                    log.error("PCAP file too small ({} bytes), likely empty or corrupted", size);
+                                    return Mono.error(new RuntimeException("PCAP file created but too small (< 100 bytes)"));
+                                }
                             } catch (Exception e) {
                                 log.error("Error checking PCAP file: {}", e.getMessage());
                                 return Mono.error(new RuntimeException("PCAP file created but cannot read: " + e.getMessage()));
