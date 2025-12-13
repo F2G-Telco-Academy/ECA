@@ -210,8 +210,9 @@ public class QmdlConversionService {
         Files.write(scriptFile, pythonScript.getBytes());
 
         try {
-            // Use generic 'python' so it works on Windows where 'python3' may not exist
-            ProcessBuilder pb = new ProcessBuilder("python", scriptFile.toString());
+            // Use python3 for Linux, python for Windows
+            String pythonCmd = System.getProperty("os.name").toLowerCase().contains("win") ? "python" : "python3";
+            ProcessBuilder pb = new ProcessBuilder(pythonCmd, scriptFile.toString());
             executeConversion(pb, "python-qmdl-converter");
             return output;
         } finally {
@@ -289,7 +290,7 @@ public class QmdlConversionService {
     public boolean isQmdlFile(Path file) {
         String filename = file.getFileName().toString().toLowerCase();
         return filename.endsWith(".qmdl") || filename.endsWith(".qmdl2") ||
-               filename.endsWith(".dlf") || filename.endsWith(".sdm");
+               filename.endsWith(".dlf");
     }
 
     /**
