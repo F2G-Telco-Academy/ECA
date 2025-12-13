@@ -158,13 +158,14 @@ public class QmdlConversionService {
     private void convertWithScat(Path input, Path output, Path converter) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(
             "python3",
-            "-m", "scat.main",
+            "src/scat/main.py",
             "-t", "qc",
             "-d", input.toString(),
             "-F", output.toString(),
             "-L", "ip,mac,rlc,pdcp,rrc,nas"
         );
         pb.directory(new File("./scat"));
+        pb.environment().put("PYTHONPATH", "src");
         executeConversion(pb, "scat");
     }
     

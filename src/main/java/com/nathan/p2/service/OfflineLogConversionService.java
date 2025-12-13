@@ -33,8 +33,7 @@ public class OfflineLogConversionService {
 
     public Mono<Path> convertToPcap(Path inputLog, Path outputPcap, LogFormat format) {
         List<String> args = new ArrayList<>();
-        args.add("-m");
-        args.add("scat");
+        args.add("src/scat/main.py");
         args.add("-t");
         args.add(format.getScatType());
         args.add("-d");
@@ -51,7 +50,7 @@ public class OfflineLogConversionService {
             .command(pythonPath)
             .args(args)
             .workingDirectory(Path.of(config.getTools().getScat().getPath()))
-            .environment(Map.of())
+            .environment(Map.of("PYTHONPATH", "src"))
             .captureStderr(true)
             .build();
 
